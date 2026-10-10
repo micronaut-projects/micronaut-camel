@@ -16,12 +16,7 @@
 package io.micronaut.camel.jsonschema;
 
 import io.micronaut.context.annotation.Requires;
-import io.micronaut.context.env.Environment;
-import io.micronaut.core.annotation.AnnotationValue;
 import io.micronaut.core.annotation.Internal;
-import io.micronaut.core.beans.BeanIntrospection;
-import io.micronaut.core.naming.NameUtils;
-import io.micronaut.jsonschema.JsonSchema;
 import io.micronaut.jsonschema.validation.JsonSchemaValidator;
 import jakarta.inject.Singleton;
 import org.apache.camel.CamelContext;
@@ -31,12 +26,7 @@ import org.apache.camel.spi.DataType;
 import org.apache.camel.spi.Validator;
 import org.apache.camel.spi.ValidatorKey;
 import org.apache.camel.spi.ValidatorRegistry;
-import org.jspecify.annotations.Nullable;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 
 /**
@@ -88,39 +78,18 @@ abstract sealed class JsonSchemaValidators implements CamelContextCustomizer {
     static final class Micronaut extends JsonSchemaValidators {
 
         /**
-         * @param types       The {@code @JsonSchema} types
-         * @param validator   The Micronaut JSON Schema validator
-         * @param environment The environment, to read the schemas from
+         * @param types     The {@code @JsonSchema} types
+         * @param validator The Micronaut JSON Schema validator, which finds the schema of a type by its class
          */
-        Micronaut(JsonSchemaTypes types, JsonSchemaValidator validator, Environment environment) {
-            super(types, type -> new MicronautJsonSchemaValidator(validator, type, schemaUnlessFoundByType(types, type, environment)));
-        }
-
-        /**
-         * The Micronaut validator looks up the schema of a type by its simple name, or by the {@code uri} of the
-         * annotation, which misses the schemas of nested types and of types with a title: the schema of those is
-         * given to the validator instead.
-         */
-        private static @Nullable String schemaUnlessFoundByType(JsonSchemaTypes types, Class<?> type, Environment environment) {
-            String resource = types.find(type.getName()).map(JsonSchemaTypes.JsonSchemaType::resource).orElseThrow();
-            AnnotationValue<JsonSchema> annotation = BeanIntrospection.getIntrospection(type).getAnnotation(JsonSchema.class);
-            String name = annotation == null ? null : annotation.stringValue("uri").map(uri -> uri.replace("/", "")).orElse(null);
-            String expected = (name == null ? NameUtils.hyphenate(type.getSimpleName()) : name) + ".schema.json";
-            if (resource.endsWith("/" + expected)) {
-                return null;
-            }
-            try (InputStream in = environment.getResourceAsStream(resource).orElse(null)) {
-                return in == null ? null : new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            } catch (IOException e) {
-                throw new UncheckedIOException("Failed to read the JSON schema " + resource, e);
-            }
+        Micronaut(JsonSchemaTypes types, JsonSchemaValidator validator) {
+            super(types, type -> new MicronautJsonSchemaValidator(validator, type));
         }
     }
 
     /**
      * The validators backed by the {@code json-validator} component of {@code camel-json-validator}, when the
-     * Micronaut JSON Schema validator is not there: the two use incompatible versions of the NetworkNT JSON
-     * Schema library, so an application has one or the other.
+     * Micronaut JSON Schema validator is not there. When an application has both, the Micronaut validator
+     * validates the types, and routes can still use {@code json-validator} endpoints.
      */
     @Singleton
     @Internal

@@ -22,7 +22,6 @@ import org.apache.camel.Message;
 import org.apache.camel.ValidationException;
 import org.apache.camel.spi.DataType;
 import org.apache.camel.spi.Validator;
-import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.List;
@@ -41,19 +40,14 @@ final class MicronautJsonSchemaValidator extends Validator {
 
     private final JsonSchemaValidator validator;
     private final Class<?> type;
-    private final @Nullable String schema;
 
     /**
      * @param validator The Micronaut JSON Schema validator
      * @param type      The {@code @JsonSchema} type
-     * @param schema    The schema, when the validator would not find it by the type: the validator looks for
-     *                  the schema of a nested type or of a type with a title under another name than the
-     *                  annotation processor gives it
      */
-    MicronautJsonSchemaValidator(JsonSchemaValidator validator, Class<?> type, @Nullable String schema) {
+    MicronautJsonSchemaValidator(JsonSchemaValidator validator, Class<?> type) {
         this.validator = validator;
         this.type = type;
-        this.schema = schema;
     }
 
     @Override
@@ -65,7 +59,7 @@ final class MicronautJsonSchemaValidator extends Validator {
         Set<? extends ValidationMessage> messages;
         try {
             Object value = type.isInstance(body) ? body : message.getMandatoryBody(String.class);
-            messages = schema == null ? validator.validate(value, type) : validator.validate(value, schema);
+            messages = validator.validate(value, type);
         } catch (IOException | RuntimeException | InvalidPayloadException e) {
             throw new ValidationException("JSON schema validation of " + type.getName() + " failed: " + e.getMessage(),
                 message.getExchange(), e);

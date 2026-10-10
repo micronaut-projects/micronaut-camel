@@ -77,6 +77,22 @@ class JsonSchemaValidatorsTest {
     }
 
     @Test
+    void validatesATitledTypeReferencingTheSchemaOfAnotherType() {
+        MockEndpoint consigned = camelContext.getEndpoint("mock:consigned", MockEndpoint.class);
+        consigned.expectedMessageCount(1);
+
+        producerTemplate.sendBody("direct:consign", "{\"reference\":\"C1\",\"shipments\":[{\"id\":\"S1\",\"weight\":12}]}");
+
+        // the error is in the schema of Shipment, which the schema of Consignment references by its classpath URI
+        CamelExecutionException e = assertThrows(CamelExecutionException.class,
+            () -> producerTemplate.sendBody("direct:consign", "{\"reference\":\"C2\",\"shipments\":[{\"id\":\"S2\",\"weight\":0}]}"));
+        JsonSchemaValidationException validation = assertInstanceOf(JsonSchemaValidationException.class, e.getCause());
+        assertEquals(Consignment.class, validation.getType());
+        assertEquals(1, validation.getErrors().size(), validation.getErrors().toString());
+        assertTrue(validation.getErrors().getFirst().contains("/shipments/0/weight"), validation.getErrors().toString());
+    }
+
+    @Test
     void resolvesTheSchemasAsResources() throws Exception {
         for (String name : List.of("Shipment", Shipment.class.getName(), "json-schema-validators-test-shipment")) {
             Resource resource = PluginHelper.getResourceLoader(camelContext).resolveResource("jsonschema:" + name);
@@ -85,12 +101,23 @@ class JsonSchemaValidatorsTest {
                 assertTrue(new String(in.readAllBytes(), StandardCharsets.UTF_8).contains("\"weight\""), name);
             }
         }
+        // a titled type is found by the name of its schema, which comes from the title
+        Resource consignment = PluginHelper.getResourceLoader(camelContext).resolveResource("jsonschema:consignment");
+        try (InputStream in = consignment.getInputStream()) {
+            assertTrue(new String(in.readAllBytes(), StandardCharsets.UTF_8)
+                .contains("classpath:META-INF/schemas/json-schema-validators-test-shipment.schema.json"));
+        }
         assertFalse(PluginHelper.getResourceLoader(camelContext).resolveResource("jsonschema:Unknown").exists());
     }
 
     @JsonSchema
     @Serdeable
     public record Shipment(@NotBlank String id, @Positive int weight) {
+    }
+
+    @JsonSchema(title = "Consignment")
+    @Serdeable
+    public record Consignment(@NotBlank String reference, List<Shipment> shipments) {
     }
 
     @Singleton
@@ -102,6 +129,9 @@ class JsonSchemaValidatorsTest {
             from("direct:ship")
                 .inputTypeWithValidate(Shipment.class)
                 .to("mock:shipped");
+            from("direct:consign")
+                .inputTypeWithValidate(Consignment.class)
+                .to("mock:consigned");
             from("direct:quote")
                 .outputTypeWithValidate(Shipment.class)
                 .process(exchange -> exchange.getMessage().setBody(
