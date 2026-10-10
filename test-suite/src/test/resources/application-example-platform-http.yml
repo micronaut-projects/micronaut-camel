@@ -1,0 +1,5 @@
+# Ports platform-http/src/main/resources/application.properties
+camel:
+  main:
+    # the name of Camel
+    name: MyCamel

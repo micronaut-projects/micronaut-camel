@@ -1,0 +1,8 @@
+# Ports platform-http-proxy/src/main/resources/application.properties
+camel:
+  main:
+    name: MyCamelReverseProxy
+
+# the backend is a controller of this application instead of http://httpbin.org
+reverse-proxy:
+  target-base-uri: http://localhost:${micronaut.server.port}/backend

@@ -1,0 +1,92 @@
+The `micronaut-camel-http` module serves Camel's https://camel.apache.org/components/next/platform-http-component.html[platform-http] component with the Micronaut HTTP server. Camel routes that consume from `platform-http:` endpoints, and the services of the https://camel.apache.org/manual/rest-dsl.html[REST DSL], are served on the port of the application, next to its controllers.
+
+dependency:io.micronaut.camel:micronaut-camel-http[]
+
+The application also needs a Micronaut HTTP server, such as the default Netty server:
+
+dependency:io.micronaut:micronaut-http-server-netty[]
+
+The routes are served by any Micronaut HTTP server, including the servlet containers of https://micronaut-projects.github.io/micronaut-servlet/latest/guide/[Micronaut Servlet], such as Jetty, Tomcat and Undertow.
+
+=== HTTP endpoints
+
+A route consumes the requests to a path with a `platform-http:` endpoint:
+
+snippet::io.micronaut.camel.docs.http.HelloRoutes[tags="routes", indent=0, title="A platform-http route"]
+
+<1> The route serves `GET` requests to `/hello/{name}`. Without `httpMethodRestrict`, it serves every method.
+<2> The `{name}` path parameter is a message header.
+
+The Camel message of a request has:
+
+* the request body, as a `byte[]`, or no body if the request has none. A form (`application/x-www-form-urlencoded`) becomes a `Map` body, unless `populateBodyWithForm=false`, and its fields are also headers.
+* the request headers, the query parameters and the path parameters as headers, filtered by the endpoint's `headerFilterStrategy`
+* the `CamelHttpMethod`, `CamelHttpPath` (the request path without the server context path), `CamelHttpUri`, `CamelHttpUrl`, `CamelHttpQuery` and `CamelHttpRawQuery` headers, and `CamelHttpCharacterEncoding` when the request declares a charset
+* the Micronaut `HttpRequest` in the `CamelMicronautHttpRequest` header, and the client and server addresses in the `CamelMicronautHttpRemoteAddress` and `CamelMicronautHttpLocalAddress` headers. The names are constants of `MicronautPlatformHttpConstants`.
+
+The response is built from the message once the route has processed the exchange:
+
+* the status is the `CamelHttpResponseCode` header, otherwise `200`, `204` when there is no body, or `500` when the exchange failed
+* the message headers are response headers, except the `Camel*` headers, the path parameters, and the common request headers such as `Accept` and `User-Agent` unless `returnHttpRequestHeaders=true`
+* the body is written as bytes: a `String` in the charset of the exchange, a `byte[]`, a `ByteBuffer`, an `InputStream`, or any body Camel converts to bytes. Its type is the `Content-Type` header, otherwise `text/plain` for a `String` and `application/octet-stream` for other bodies.
+* when the exchange failed, the body is empty, or the stack trace of the exception with `muteException=false`
+
+The `consumes`, `produces` and `httpMethodRestrict` options of the endpoint are checked before Camel processes a request, as for controllers: a request to the path of a route with another method receives a `405 Method Not Allowed` response, a request whose `Content-Type` the route does not consume a `415 Unsupported Media Type`, and a request that does not accept what the route produces a `406 Not Acceptable`. Set `camel.component.platform-http.server-request-validation` to `false` to let the routes see every request. With `matchOnUriPrefix=true`, or a path that ends with `*`, a route also serves the paths below its path.
+
+=== REST services
+
+The REST DSL uses the `platform-http` component when it is the only REST component of the application. Add `camel-rest`, and a JSON data format such as `camel-jackson` or `camel-jackson3` to bind JSON bodies to objects:
+
+dependency:org.apache.camel:camel-rest[]
+
+dependency:org.apache.camel:camel-jackson[]
+
+snippet::io.micronaut.camel.docs.http.Book[tags="book", indent=0, title="A type exchanged as JSON"]
+
+snippet::io.micronaut.camel.docs.http.BookRoutes[tags="routes", indent=0, title="REST services"]
+
+<1> Bodies are bound to and from JSON.
+<2> A `POST` to `/books` receives a `Book`.
+<3> A `GET` to `/books/{isbn}` returns a `Book`. The `isbn` path parameter is a header.
+<4> The response status is `201 Created`.
+
+The REST configuration is set with `restConfiguration()` in a route builder, or with the `camel.rest.*` options, for example `camel.rest.context-path` to serve every REST service below a path. Camel's https://camel.apache.org/components/next/rest-openapi-component.html[rest-openapi] component, which serves the operations of an OpenAPI contract, and the `apiContextPath` of the REST configuration, which serves the OpenAPI document of the REST services with `camel-openapi-java`, also use the `platform-http` component.
+
+=== Micronaut routes and filters
+
+Camel routes and Micronaut routes share the server. A request goes to a Camel route when no Micronaut route, such as a controller method, matches it: a controller takes precedence over a Camel route with the same path and method. A request that matches neither receives Micronaut's `404 Not Found` response, and the status responses of Camel routes, such as `405 Method Not Allowed`, are produced by Micronaut's error handling, so `@Error` handlers and `ExceptionHandler` beans apply to them.
+
+The requests to Camel routes go through the Micronaut server filters, so filters, such as those of Micronaut Security, apply to Camel routes as they apply to controllers:
+
+snippet::io.micronaut.camel.docs.http.ApiKeyFilter[tags="filter", indent=0, title="A filter in front of REST services"]
+
+<1> The filter applies to the paths of the REST services.
+<2> A request without the API key is rejected before it reaches Camel.
+<3> Other requests continue to Camel.
+
+The request body is read without blocking the event loop. Camel then processes the exchange on the executor named `blocking` (`TaskExecutors.BLOCKING`), so routes may block, and the request context is propagated: `ServerRequestContext.currentRequest()` returns the request in the route.
+
+Routes are registered when they start, and removed when they stop, so a stopped route no longer serves its path. A suspended route responds with `503 Service Unavailable`.
+
+=== Configuration
+
+The options of the `platform-http` component are set with `camel.component.platform-http.*`, and those of an endpoint in its URI:
+
+[configuration]
+----
+camel:
+  component:
+    platform-http:
+      server-request-validation: false
+      request-timeout: 30000
+  rest:
+    context-path: /api
+----
+
+The paths of Camel routes are relative to the context path of the server, `micronaut.server.context-path`.
+
+The engine supports the options `matchOnUriPrefix`, `httpMethodRestrict`, `consumes`, `produces`, `muteException`, `headerFilterStrategy`, `returnHttpRequestHeaders`, `populateBodyWithForm`, `useStreaming` (the route receives the request body as an `InputStream`), `useCookieHandler`, `cookie*`, `requestTimeout` (the response is `503 Service Unavailable` when the route takes longer) and `handleWriteResponseError`. It does not support:
+
+* multipart requests: the body of a `multipart/form-data` request is not split into attachments
+* the `platform-http:proxy` forward proxy of the Vert.x engine
+* streaming responses: the response body is read into memory before it is written, as the Spring Boot engine does for responses that are not chunked
