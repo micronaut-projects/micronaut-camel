@@ -66,4 +66,5 @@ micronautBuild {
     importMicronautCatalog("micronaut-mongodb")
     importMicronautCatalog("micronaut-opensearch")
     importMicronautCatalog("micronaut-openapi")
+    importMicronautCatalog("micronaut-json-schema")
 }

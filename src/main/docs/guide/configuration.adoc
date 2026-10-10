@@ -84,6 +84,51 @@ The options of a component that is not on the classpath fail the startup in both
 
 NOTE: The options documented by the <<modules, Camel modules>> are those of the Camel version of Micronaut Camel, which is the version of the Camel BOM it imports. An application that upgrades or downgrades Camel itself may find options of the reference that its components do not have.
 
+[[configurationValidation]]
+=== Validating the configuration at build time
+
+Camel finds unknown options when the application starts. The https://micronaut-projects.github.io/micronaut-json-schema/latest/guide/#configurationValidator[configuration validator of Micronaut JSON Schema] finds them earlier, in a build or a CI pipeline, without starting the application, with the configuration schemas that the jars of Micronaut modules have:
+
+dependency:io.micronaut.jsonschema:micronaut-json-schema-configuration-validator[]
+
+Each <<modules, Camel module>> has the schemas of the options of its components, data formats and languages, such as `+camel.component.seda.*+` for `micronaut-camel-seda`, and `micronaut-camel-configuration` has those of `+camel.main.*+` and of the other configuration groups of Camel. The schemas give the type of each option, and the possible values of the options that the Camel catalog lists them for. With this configuration:
+
+[configuration]
+----
+camel:
+  main:
+    shutdown-timout: 5
+    jmx-management-statistics-level: All
+  component:
+    seda:
+      queue-sise: 500
+      concurrent-consumers: two
+----
+
+the validator reports:
+
+[source]
+----
+camel.main.shutdown-timout: Property not present in schema. Did you mean: camel.main.shutdown-timeout, ...?
+camel.main.jmx-management-statistics-level: Value not in enum. Expected one of: 'Extended', 'Default', 'RoutesOnly', 'Off'
+camel.component.seda.queue-sise: Property not present in schema. Did you mean: camel.component.seda.queue-size?
+camel.component.seda.concurrent-consumers: Expected integer
+----
+
+Run the validator from the command line of a build, with the runtime classpath of the application:
+
+[source,bash]
+----
+java -cp <runtime-classpath> io.micronaut.jsonschema.configuration.validator.cli.ConfigurationJsonSchemaValidatorCli \
+  --classpath <runtime-classpath> \
+  --environments prod \
+  --out build/reports/configuration
+----
+
+or with its API, for example in a test, where `ConfigurationJsonSchemaValidator` validates an `Environment`. The module also has a `ConfigurationErrors` bean and, with Micronaut Management, a health indicator that is `DOWN` when the configuration has errors.
+
+The validator only knows the options of the components whose module is on the classpath: the options of a component that has only its Camel artifact, such as `org.apache.camel:camel-seda` instead of `micronaut-camel-seda`, are not validated, and neither are those of components that are not on the classpath, which Camel itself fails on at startup.
+
 === IDE support and the configuration reference
 
 The `micronaut-camel-configuration` module documents the `camel.main.*` options and Camel's other configuration groups as `@ConfigurationProperties`, so IDEs complete them and they appear in the configuration reference:

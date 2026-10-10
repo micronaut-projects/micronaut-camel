@@ -6,6 +6,7 @@
     { "glob": "camel/**" },
     { "glob": "camel-template/**" },
     { "glob": "camel-rest/**" },
-    { "glob": "kamelets/**" }
+    { "glob": "kamelets/**" },
+    { "glob": "META-INF/schemas/**" }
   ]
 }

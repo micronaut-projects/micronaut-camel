@@ -65,6 +65,65 @@ dependencies {
     testRuntimeOnly(mn.snakeyaml)
 }
 
+// The JSON schema samples use camel-json-validator (NetworkNT JSON Schema 2, Jackson 2), which cannot share
+// a classpath with micronaut-json-schema-validation (NetworkNT JSON Schema 3), a dependency of micronaut-mcp
+// that the MCP samples need. They compile and run in a jsonSchemaTest suite of their own, from the same
+// sources, so the guide finds every sample in src/test/python. The Python compiler takes whole directories,
+// so each suite compiles a copy of the sources that is its own.
+def jsonSchemaSamples = 'micronaut/camel/docs/jsonschema/**'
+def testPythonSources = tasks.register('testPythonSources', Sync) {
+    from('src/test/python') {
+        exclude(jsonSchemaSamples)
+    }
+    into(layout.buildDirectory.dir('python-sources/test'))
+}
+def jsonSchemaTestPythonSources = tasks.register('jsonSchemaTestPythonSources', Sync) {
+    from('src/test/python') {
+        include(jsonSchemaSamples)
+    }
+    into(layout.buildDirectory.dir('python-sources/jsonSchemaTest'))
+}
+
+testing {
+    suites {
+        jsonSchemaTest(JvmTestSuite) {
+            useJUnitJupiter()
+            dependencies {
+                implementation(mn.micronaut.inject.python.test)
+                implementation(mn.micronaut.context.python)
+                implementation(projects.micronautCamelProcessor)
+                implementation(mnJsonSchema.micronaut.json.schema.processor)
+                implementation(mnSerde.micronaut.serde.processor)
+                implementation(mnValidation.micronaut.validation.processor)
+
+                implementation(projects.micronautCamelCore)
+                implementation(libs.camel.direct)
+                implementation(libs.camel.json.validator)
+                implementation(libs.camel.mock)
+                implementation(mnJsonSchema.micronaut.json.schema.annotations)
+                implementation(mnSerde.micronaut.serde.jackson)
+                implementation(mnValidation.micronaut.validation)
+                implementation(mnTest.micronaut.test.junit5)
+                implementation(mnTest.junit.jupiter.api)
+                runtimeOnly(mnLogging.logback.classic)
+                runtimeOnly(mn.snakeyaml)
+            }
+        }
+    }
+}
+
+tasks.named('compileTestPython') {
+    source.setFrom(testPythonSources)
+}
+
+tasks.named('compileJsonSchemaTestPython') {
+    source.setFrom(jsonSchemaTestPythonSources)
+}
+
+tasks.named('check') {
+    dependsOn(testing.suites.jsonSchemaTest)
+}
+
 tasks.withType(Test).configureEach {
     systemProperty "micronaut.python.pool.enabled", "false"
 }

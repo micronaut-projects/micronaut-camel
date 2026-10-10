@@ -35,9 +35,11 @@ import org.jspecify.annotations.Nullable;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Modifier;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * Generates a {@code @ConfigurationProperties} class that documents the options of a Camel
@@ -104,6 +106,20 @@ final class ConfigurationGenerator {
             }
         }
         return builder.build();
+    }
+
+    /**
+     * @param options The options of a configuration class
+     * @param names   The property name of an option, relative to the prefix of the class
+     * @param <O>     The type of the options
+     * @return The options by property name, the first option of a name only, as the class has
+     */
+    static <O extends BaseOptionModel> Map<String, O> options(List<O> options, Function<O, String> names) {
+        Map<String, O> result = new LinkedHashMap<>();
+        for (O option : options) {
+            result.putIfAbsent(names.apply(option), option);
+        }
+        return result;
     }
 
     private static void configurationProperties(ClassDef.ClassDefBuilder builder, String prefix) {
