@@ -1,0 +1,1 @@
+class=io.micronaut.camel.json.MicronautJsonDataFormat

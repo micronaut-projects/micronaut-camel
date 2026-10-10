@@ -11,6 +11,9 @@ dependencies {
     api(libs.camel.main)
 
     compileOnly(libs.camel.endpointdsl)
+    // integrations that apply when the Micronaut module is present
+    compileOnly(mn.micronaut.json.core)
+    compileOnly(mnCache.micronaut.cache.core)
 
     testAnnotationProcessor(mn.micronaut.inject.java)
     testAnnotationProcessor(projects.micronautCamelProcessor)
@@ -23,6 +26,10 @@ dependencies {
     testImplementation(libs.camel.seda)
     testImplementation(libs.camel.timer)
     testImplementation(libs.camel.yaml.dsl)
+    testImplementation(libs.camel.file)
+    testImplementation(mnCache.micronaut.cache.caffeine)
+    testImplementation(mnSerde.micronaut.serde.jackson)
+    testAnnotationProcessor(mnSerde.micronaut.serde.processor)
     testRuntimeOnly(mnTest.junit.jupiter.engine)
     testRuntimeOnly(mnTest.junit.platform.launcher)
     testRuntimeOnly(mnLogging.logback.classic)

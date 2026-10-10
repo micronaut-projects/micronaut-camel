@@ -1,0 +1,5 @@
+micronaut:
+  caches:
+    # the idempotent repository of io.micronaut.camel.docs.integrations.IntegrationRoutes
+    imports:
+      maximum-size: 1000

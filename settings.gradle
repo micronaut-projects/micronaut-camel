@@ -33,4 +33,6 @@ micronautBuild {
     useStandardizedProjectNames = true
     importMicronautCatalog()
     importMicronautCatalog("micronaut-sourcegen")
+    importMicronautCatalog("micronaut-cache")
+    importMicronautCatalog("micronaut-serde")
 }

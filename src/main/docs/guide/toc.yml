@@ -10,6 +10,8 @@ beans:
   title: Beans and the Camel Registry
 annotations:
   title: Camel Annotations
+integrations:
+  title: Micronaut Integrations
 lifecycle:
   title: Lifecycle
 testing:

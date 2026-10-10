@@ -24,6 +24,8 @@ dependencies {
     testImplementation(libs.camel.undertow)
     testImplementation(libs.camel.yaml.dsl)
     testImplementation(mnTest.micronaut.test.junit5)
+    testImplementation(mnCache.micronaut.cache.caffeine)
+    testImplementation(mnSerde.micronaut.serde.jackson)
     testRuntimeOnly(mnLogging.logback.classic)
     testRuntimeOnly(mn.snakeyaml)
 }

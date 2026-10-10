@@ -21,6 +21,8 @@ micronaut-docs = "3.0.0"
 micronaut-test = "5.2.0"
 micronaut-logging = "2.1.0"
 micronaut-sourcegen = "2.2.3"
+micronaut-cache = "6.1.1"
+micronaut-serde = "3.2.4"
 groovy = "4.0.24"
 spock = "2.3-groovy-4.0"
 
@@ -32,6 +34,8 @@ managed-camel = "4.22.1"
 micronaut-core = { module = 'io.micronaut:micronaut-core-bom', version.ref = 'micronaut' }
 micronaut-logging = { module = "io.micronaut.logging:micronaut-logging-bom", version.ref = "micronaut-logging" }
 micronaut-sourcegen = { module = "io.micronaut.sourcegen:micronaut-sourcegen-bom", version.ref = "micronaut-sourcegen" }
+micronaut-cache = { module = "io.micronaut.cache:micronaut-cache-bom", version.ref = "micronaut-cache" }
+micronaut-serde = { module = "io.micronaut.serde:micronaut-serde-bom", version.ref = "micronaut-serde" }
 
 #
 # Managed dependencies appear in the BOM
