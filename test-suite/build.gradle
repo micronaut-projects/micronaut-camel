@@ -4,16 +4,11 @@ plugins {
     id 'jvm-test-suite'
 }
 
-// The JSON schema samples use camel-json-validator, whose version of the NetworkNT JSON Schema library is
-// incompatible with that of the Micronaut JSON Schema validator, which micronaut-mcp brings to the other
-// samples: they run in a test suite of their own, from the same sources.
-def jsonSchemaSamples = 'io/micronaut/camel/docs/jsonschema/**'
-sourceSets.test.java.exclude(jsonSchemaSamples)
-
 dependencies {
     testAnnotationProcessor(mn.micronaut.inject.java)
     testAnnotationProcessor(projects.micronautCamelProcessor)
     testAnnotationProcessor(mnValidation.micronaut.validation.processor)
+    testAnnotationProcessor(mnJsonSchema.micronaut.json.schema.processor)
     testImplementation(projects.micronautCamelCore)
     testImplementation(projects.micronautCamelPlatformHttp)
     testImplementation(projects.micronautCamelTest)
@@ -34,6 +29,7 @@ dependencies {
     testImplementation(libs.camel.http)
     testImplementation(libs.camel.jackson3)
     testImplementation(libs.camel.jms)
+    testImplementation(libs.camel.json.validator)
     testImplementation(libs.camel.jsonpath)
     testImplementation(libs.camel.jpa)
     testImplementation(libs.camel.kafka)
@@ -82,6 +78,10 @@ dependencies {
     }
     testImplementation(mnObjectStorage.micronaut.object.storage.local)
     testImplementation(mnMcp.micronaut.mcp.server.java.sdk)
+    // camel-json-validator and the Micronaut JSON Schema validator, which micronaut-mcp brings, in one context
+    testImplementation(mnJsonSchema.micronaut.json.schema.annotations)
+    testImplementation(mnJsonSchema.micronaut.json.schema.validation)
+    testImplementation(mnSerde.micronaut.serde.api)
     testImplementation(libs.camel.ai.tool)
     testImplementation(libs.camel.mcp.server.api)
 
@@ -159,29 +159,6 @@ testing {
                 }
             }
         }
-        jsonSchemaTest(JvmTestSuite) {
-            useJUnitJupiter()
-            sources {
-                java {
-                    srcDirs = ['src/test/java']
-                    include(jsonSchemaSamples)
-                }
-            }
-            dependencies {
-                annotationProcessor(mn.micronaut.inject.java)
-                annotationProcessor(mnJsonSchema.micronaut.json.schema.processor)
-                annotationProcessor(mnSerde.micronaut.serde.processor)
-                implementation(projects.micronautCamelCore)
-                implementation(mnTest.micronaut.test.junit5)
-                implementation(mnJsonSchema.micronaut.json.schema.annotations)
-                implementation(mnSerde.micronaut.serde.jackson)
-                implementation(mnValidation.validation)
-                implementation(libs.camel.direct)
-                implementation(libs.camel.json.validator)
-                implementation(libs.camel.mock)
-                runtimeOnly(mnLogging.logback.classic)
-            }
-        }
     }
 }
 
@@ -192,7 +169,6 @@ tasks.named('compileOpenapiTestJava', JavaCompile) {
 
 tasks.named('check') {
     dependsOn(testing.suites.openapiTest)
-    dependsOn(testing.suites.jsonSchemaTest)
 }
 
 tasks.named('compileTestJava', JavaCompile) {

@@ -13,6 +13,7 @@ dependencies {
     testImplementation(mn.micronaut.context.python)
     testImplementation(projects.micronautCamelProcessor)
     testImplementation(mnValidation.micronaut.validation.processor)
+    testImplementation(mnJsonSchema.micronaut.json.schema.processor)
 
     testImplementation(projects.micronautCamelCore)
     testImplementation(projects.micronautCamelPlatformHttp)
@@ -31,6 +32,7 @@ dependencies {
     testImplementation(libs.camel.file)
     testImplementation(libs.camel.health)
     testImplementation(libs.camel.jackson3)
+    testImplementation(libs.camel.json.validator)
     testImplementation(libs.camel.kafka)
     testImplementation(libs.camel.log)
     testImplementation(libs.camel.management)
@@ -49,6 +51,9 @@ dependencies {
     testImplementation(mnCache.micronaut.cache.caffeine)
     testImplementation(mnKafka.micronaut.kafka)
     testImplementation(mnMcp.micronaut.mcp.server.java.sdk)
+    testImplementation(mnJsonSchema.micronaut.json.schema.annotations)
+    testImplementation(mnJsonSchema.micronaut.json.schema.validation)
+    testImplementation(mnSerde.micronaut.serde.api)
     testImplementation(mnMicrometer.micronaut.micrometer.core)
     testImplementation(mnObjectStorage.micronaut.object.storage.local)
     testImplementation(mnRedis.micronaut.redis.lettuce.core)
@@ -63,65 +68,6 @@ dependencies {
     testRuntimeOnly(mn.micronaut.json.core)
     testRuntimeOnly(mnSql.h2)
     testRuntimeOnly(mn.snakeyaml)
-}
-
-// The JSON schema samples use camel-json-validator (NetworkNT JSON Schema 2, Jackson 2), which cannot share
-// a classpath with micronaut-json-schema-validation (NetworkNT JSON Schema 3), a dependency of micronaut-mcp
-// that the MCP samples need. They compile and run in a jsonSchemaTest suite of their own, from the same
-// sources, so the guide finds every sample in src/test/python. The Python compiler takes whole directories,
-// so each suite compiles a copy of the sources that is its own.
-def jsonSchemaSamples = 'micronaut/camel/docs/jsonschema/**'
-def testPythonSources = tasks.register('testPythonSources', Sync) {
-    from('src/test/python') {
-        exclude(jsonSchemaSamples)
-    }
-    into(layout.buildDirectory.dir('python-sources/test'))
-}
-def jsonSchemaTestPythonSources = tasks.register('jsonSchemaTestPythonSources', Sync) {
-    from('src/test/python') {
-        include(jsonSchemaSamples)
-    }
-    into(layout.buildDirectory.dir('python-sources/jsonSchemaTest'))
-}
-
-testing {
-    suites {
-        jsonSchemaTest(JvmTestSuite) {
-            useJUnitJupiter()
-            dependencies {
-                implementation(mn.micronaut.inject.python.test)
-                implementation(mn.micronaut.context.python)
-                implementation(projects.micronautCamelProcessor)
-                implementation(mnJsonSchema.micronaut.json.schema.processor)
-                implementation(mnSerde.micronaut.serde.processor)
-                implementation(mnValidation.micronaut.validation.processor)
-
-                implementation(projects.micronautCamelCore)
-                implementation(libs.camel.direct)
-                implementation(libs.camel.json.validator)
-                implementation(libs.camel.mock)
-                implementation(mnJsonSchema.micronaut.json.schema.annotations)
-                implementation(mnSerde.micronaut.serde.jackson)
-                implementation(mnValidation.micronaut.validation)
-                implementation(mnTest.micronaut.test.junit5)
-                implementation(mnTest.junit.jupiter.api)
-                runtimeOnly(mnLogging.logback.classic)
-                runtimeOnly(mn.snakeyaml)
-            }
-        }
-    }
-}
-
-tasks.named('compileTestPython') {
-    source.setFrom(testPythonSources)
-}
-
-tasks.named('compileJsonSchemaTestPython') {
-    source.setFrom(jsonSchemaTestPythonSources)
-}
-
-tasks.named('check') {
-    dependsOn(testing.suites.jsonSchemaTest)
 }
 
 tasks.withType(Test).configureEach {

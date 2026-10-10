@@ -1,19 +1,13 @@
 plugins {
     id 'groovy'
     id 'io.micronaut.build.internal.camel-tests'
-    id 'jvm-test-suite'
 }
-
-// The JSON schema samples use camel-json-validator, whose version of the NetworkNT JSON Schema library is
-// incompatible with that of the Micronaut JSON Schema validator, which micronaut-mcp brings to the other
-// samples: they run in a test suite of their own, from the same sources.
-def jsonSchemaSamples = 'io/micronaut/camel/docs/jsonschema/**'
-sourceSets.test.groovy.exclude(jsonSchemaSamples)
 
 dependencies {
     testCompileOnly(mn.micronaut.inject.groovy)
     testCompileOnly(projects.micronautCamelProcessor)
     testCompileOnly(mnValidation.micronaut.validation.processor)
+    testCompileOnly(mnJsonSchema.micronaut.json.schema.processor)
     testImplementation(projects.micronautCamelCore)
     testImplementation(projects.micronautCamelPlatformHttp)
     testImplementation(projects.micronautCamelTest)
@@ -25,6 +19,7 @@ dependencies {
     testImplementation(libs.camel.endpointdsl)
     testImplementation(libs.camel.file)
     testImplementation(libs.camel.jackson3)
+    testImplementation(libs.camel.json.validator)
     testImplementation(libs.camel.mock)
     testImplementation(libs.camel.kafka)
     testImplementation(libs.camel.log)
@@ -57,42 +52,13 @@ dependencies {
         exclude(group: 'org.hibernate.validator')
     }
     testImplementation(mnMcp.micronaut.mcp.server.java.sdk)
+    testImplementation(mnJsonSchema.micronaut.json.schema.annotations)
+    testImplementation(mnJsonSchema.micronaut.json.schema.validation)
+    testImplementation(mnSerde.micronaut.serde.api)
     testImplementation(libs.camel.ai.tool)
     testImplementation(libs.camel.mcp.server.api)
     testRuntimeOnly(mnLogging.logback.classic)
     testRuntimeOnly(mn.micronaut.json.core)
     testRuntimeOnly(mnSql.h2)
     testRuntimeOnly(mn.snakeyaml)
-}
-
-testing {
-    suites {
-        jsonSchemaTest(JvmTestSuite) {
-            useJUnitJupiter()
-            sources {
-                groovy {
-                    srcDirs = ['src/test/groovy']
-                    include(jsonSchemaSamples)
-                }
-            }
-            dependencies {
-                compileOnly(mn.micronaut.inject.groovy)
-                compileOnly(mnJsonSchema.micronaut.json.schema.processor)
-                compileOnly(mnSerde.micronaut.serde.processor)
-                implementation(projects.micronautCamelCore)
-                implementation(mnTest.micronaut.test.spock)
-                implementation(mnJsonSchema.micronaut.json.schema.annotations)
-                implementation(mnSerde.micronaut.serde.jackson)
-                implementation(mnValidation.validation)
-                implementation(libs.camel.direct)
-                implementation(libs.camel.json.validator)
-                implementation(libs.camel.mock)
-                runtimeOnly(mnLogging.logback.classic)
-            }
-        }
-    }
-}
-
-tasks.named('check') {
-    dependsOn(testing.suites.jsonSchemaTest)
 }
