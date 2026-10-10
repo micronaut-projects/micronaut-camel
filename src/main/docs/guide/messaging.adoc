@@ -61,7 +61,7 @@ kafka:
 
 Routes use Kafka endpoints without broker settings:
 
-snippet::io.micronaut.camel.docs.messaging.OrderRoutes[tags="routes", indent=0, title="Routes using Kafka", languages="java,kotlin,groovy"]
+snippet::io.micronaut.camel.docs.messaging.OrderRoutes[tags="routes", indent=0, title="Routes using Kafka"]
 
 <1> The Kafka component sends to the brokers of `kafka.bootstrap.servers`; `camel.component.kafka.brokers`, or the endpoint's `brokers` option, would take precedence.
 <2> A consumer of the same topic, using the same brokers.

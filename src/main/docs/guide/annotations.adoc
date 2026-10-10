@@ -1,4 +1,4 @@
-Camel's bean annotations, such as `@EndpointInject`, `@Produce` and `@Consume`, work on Micronaut beans. In Java and Kotlin, the Micronaut Camel annotation processor turns them into Micronaut injection points and executable methods at compile time, so Camel does not inspect beans by reflection at runtime. Add it to the annotation processor path of your build:
+Camel's bean annotations, such as `@EndpointInject`, `@Produce` and `@Consume`, work on Micronaut beans. In Java, Kotlin and Python, the Micronaut Camel annotation processor turns them into Micronaut injection points and executable methods at compile time, so Camel does not inspect beans by reflection at runtime. Add it to the annotation processor path of your build:
 
 dependency:io.micronaut.camel:micronaut-camel-processor[scope="annotationProcessor"]
 
@@ -30,31 +30,33 @@ dependency:io.micronaut.camel:micronaut-camel-processor[scope="annotationProcess
 
 An interface whose calls send messages to an endpoint:
 
-snippet::io.micronaut.camel.docs.annotations.OrderSender[tags="sender", indent=0, title="An interface", languages="java,kotlin,groovy"]
+snippet::io.micronaut.camel.docs.annotations.OrderSender[tags="sender", indent=0, title="An interface"]
 
-snippet::io.micronaut.camel.docs.annotations.Checkout[tags="checkout", indent=0, title="Producing messages", languages="java,kotlin,groovy"]
+snippet::io.micronaut.camel.docs.annotations.Checkout[tags="checkout", indent=0, title="Producing messages"]
 
 <1> `@Produce` injects a proxy of `OrderSender` that sends to `direct:orders`.
 <2> Calling the proxy sends the order.
 
-snippet::io.micronaut.camel.docs.annotations.OrderConsumer[tags="consumer", indent=0, title="Consuming messages", languages="java,kotlin,groovy"]
+snippet::io.micronaut.camel.docs.annotations.OrderConsumer[tags="consumer", indent=0, title="Consuming messages"]
 
 <1> The method is subscribed to `direct:orders` when Camel starts. The bean must be a singleton.
 <2> Camel converts the message body to the type of the parameter.
 
 The processor generates a type converter loader for each `@Converter` class, in place of the loader that `camel-package-maven-plugin` generates for Maven builds:
 
-snippet::io.micronaut.camel.docs.annotations.PriceConverters[tags="converters", indent=0, title="A type converter", languages="java,kotlin,groovy"]
+snippet::io.micronaut.camel.docs.annotations.PriceConverters[tags="converters", indent=0, title="A type converter"]
 
 <1> A class with converter methods.
 <2> A converter method takes the value, and optionally the `Exchange`, and returns the converted value.
 
 `@EndpointInject` also works in tests, for example to inject a `MockEndpoint`:
 
-snippet::io.micronaut.camel.docs.annotations.AnnotationsTest[tags="test", indent=0, title="A test", languages="java,kotlin,groovy"]
+snippet::io.micronaut.camel.docs.annotations.AnnotationsTest[tags="test", indent=0, title="A test"]
 
 <1> A template that sends to `direct:orders`.
 
 NOTE: `@EndpointInject` and `@Produce` need the endpoint URI: resolving it from a property of the bean is not supported. `@BindToRegistry` is supported on classes only; declare other beans with a `@Factory`.
 
 NOTE: In Groovy, the annotation processor cannot generate code, so Camel applies its annotations to the beans that use them at runtime, by reflection, as in Spring Boot. Add `micronaut-camel-processor` to the `compileOnly` configuration, and `micronaut-camel-test` for the annotations of Spock specifications.
+
+NOTE: In Python, Camel's annotations are written as decorators and, on attributes, as `Annotated[...]` metadata, such as `Annotated[OrderSender, Produce("direct:orders")]`, which makes the attribute an injected property. Add `micronaut-camel-processor` to the `implementation` dependencies (in Gradle, `testImplementation` for tests): the compile classpath is the annotation processor path of the Python compiler. The code it generates is Java, compiled with the Java classes of the Python sources.

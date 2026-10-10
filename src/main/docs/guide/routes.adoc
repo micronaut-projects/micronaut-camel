@@ -11,7 +11,7 @@ snippet::io.micronaut.camel.docs.routes.PriceRoutes[tags="routes", indent=0, tit
 
 Routes can also be declared as lambdas, with `LambdaRouteBuilder`, or with `LambdaEndpointRouteBuilder` for the type-safe https://camel.apache.org/manual/Endpoint-dsl.html[Endpoint DSL], which needs the `camel-endpointdsl` dependency:
 
-snippet::io.micronaut.camel.docs.routes.ShippingRoutes[tags="routes", indent=0, title="Lambda routes", languages="java,kotlin,groovy"]
+snippet::io.micronaut.camel.docs.routes.ShippingRoutes[tags="routes", indent=0, title="Lambda routes"]
 
 <1> A route written with the Java DSL.
 <2> A route written with the Endpoint DSL.

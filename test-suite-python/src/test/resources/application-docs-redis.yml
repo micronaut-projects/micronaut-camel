@@ -1,0 +1,5 @@
+# the configuration of micronaut.camel.docs.integrations.GreetingCacheRoutesTest
+redis:
+  # Micronaut Redis requires redis.* when the context starts, before io.micronaut.camel.testservices.DocsServices
+  # adds the URI of the server it starts
+  uri: ${docs.redis.uri}

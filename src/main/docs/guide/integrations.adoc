@@ -4,7 +4,7 @@ Besides the beans that Camel autowires from the Micronaut application context, M
 
 The `micronaut-event` component connects routes to Micronaut application events. A producer publishes the message body as an event, converted to the type in the URI; a consumer receives the events of that type, or every event with `micronaut-event:all`:
 
-snippet::io.micronaut.camel.docs.integrations.OrderEventRoutes[tags="routes", indent=0, title="Publishing and consuming application events", languages="java,kotlin,groovy"]
+snippet::io.micronaut.camel.docs.integrations.OrderEventRoutes[tags="routes", indent=0, title="Publishing and consuming application events"]
 
 <1> Publishes the body as an `OrderPlaced` event, which `@EventListener` methods receive.
 <2> Receives the `OrderPlaced` events, published by any bean with `ApplicationEventPublisher`.
@@ -19,7 +19,7 @@ Camel's polling consumers, such as the `file`, `ftp` and `sql` consumers, can ru
 
 `MicronautCacheIdempotentRepository` stores the keys of the idempotent consumer EIP, or of the `file` consumer's `idempotentRepository` option, in a Micronaut cache: Caffeine, Redis, Hazelcast, Infinispan or any other https://micronaut-projects.github.io/micronaut-cache/latest/guide/[Micronaut Cache] implementation.
 
-snippet::io.micronaut.camel.docs.integrations.ImportRepositories[tags="repository", indent=0, title="An idempotent repository on a cache", languages="java"]
+snippet::io.micronaut.camel.docs.integrations.ImportRepositories[tags="repository", indent=0, title="An idempotent repository on a cache", languages="java,python"]
 
 <1> The cache configured under `micronaut.caches.imports`.
 
@@ -27,7 +27,7 @@ snippet::io.micronaut.camel.docs.integrations.ImportRepositories[tags="repositor
 
 `MicronautCacheAggregationRepository` stores the exchanges that the aggregator EIP is aggregating in a Micronaut cache, as JSON written by the `JsonExchangeCodec` bean, which needs `micronaut-serde-jackson` or `micronaut-jackson-databind`. Bodies and headers can be JDK value types, collections of them, and types introspected at compile time, such as `@Serdeable` types, as for the <<transactions, JDBC aggregation repository>>.
 
-snippet::io.micronaut.camel.docs.integrations.BasketRepositories[tags="repository", indent=0, title="An aggregation repository on a cache", languages="java"]
+snippet::io.micronaut.camel.docs.integrations.BasketRepositories[tags="repository", indent=0, title="An aggregation repository on a cache", languages="java,python"]
 
 <1> The cache configured under `micronaut.caches.baskets`. It must not evict the entries of the repository.
 <2> The codec that writes the exchanges as JSON.
@@ -40,7 +40,7 @@ The `micronaut-json` data format reads and writes JSON with the Micronaut `JsonM
 
 The routes below use the three integrations above:
 
-snippet::io.micronaut.camel.docs.integrations.IntegrationRoutes[tags="routes", indent=0, title="Routes using Micronaut features", languages="java"]
+snippet::io.micronaut.camel.docs.integrations.IntegrationRoutes[tags="routes", indent=0, title="Routes using Micronaut features", languages="java,python"]
 
 <1> The `file` consumer polls every second on the Micronaut scheduler.
 <2> The idempotent consumer uses the `imports` repository.
@@ -141,12 +141,12 @@ micronaut:
 
 A request to `/admin/stats` without credentials receives a `401 Unauthorized` response before it reaches Camel. Within routes, `MicronautSecurityAuthorizationPolicy` authorizes exchanges with the roles of the Micronaut `Authentication`, as `SpringSecurityAuthorizationPolicy` of camel-spring-security does with Spring Security. Declare a policy as a named bean:
 
-snippet::io.micronaut.camel.docs.integrations.SecurityPolicies[tags="policies", indent=0, title="An authorization policy", languages="java"]
+snippet::io.micronaut.camel.docs.integrations.SecurityPolicies[tags="policies", indent=0, title="An authorization policy", languages="java,python"]
 
 <1> Routes refer to the policy by its name.
 <2> The policy requires the `ROLE_ADMIN` role. With several roles, it requires one of them, or all of them with `setAllRolesRequired(true)`. Without roles, it only requires an authenticated user.
 
-snippet::io.micronaut.camel.docs.integrations.AdminRoutes[tags="routes", indent=0, title="A route that requires a role", languages="java"]
+snippet::io.micronaut.camel.docs.integrations.AdminRoutes[tags="routes", indent=0, title="A route that requires a role", languages="java,python"]
 
 <1> The intercept URL map requires an authenticated user for the REST service.
 <2> An exchange that the policy rejects fails with a `CamelAuthorizationException`, here turned into a `403 Forbidden` response.
@@ -164,7 +164,7 @@ redis:
   uri: redis://localhost:6379
 ----
 
-snippet::io.micronaut.camel.docs.integrations.GreetingCacheRoutes[tags="routes", indent=0, title="Routes using Redis", languages="java"]
+snippet::io.micronaut.camel.docs.integrations.GreetingCacheRoutes[tags="routes", indent=0, title="Routes using Redis", languages="java,python"]
 
 <1> The `SET` command stores the `CamelRedis.Value` header under the `CamelRedis.Key` header. The host and port of the URI are required by its syntax, but the template decides the server.
 <2> The `GET` command sets the body to the value.
@@ -175,11 +175,11 @@ Like the template that the component creates without Spring Boot, the template s
 
 Camel's `bean-validator` component validates the message body with a `jakarta.validation.ValidatorFactory`, which Camel autowires from the application. https://micronaut-projects.github.io/micronaut-validation/latest/guide/[Micronaut Validation] provides one, which validates at compile time introspected beans without reflection, so the component works without Hibernate Validator, which can be excluded from the `camel-bean-validator` dependency:
 
-snippet::io.micronaut.camel.docs.integrations.Ticket[tags="ticket", indent=0, title="A validated type", languages="java"]
+snippet::io.micronaut.camel.docs.integrations.Ticket[tags="ticket", indent=0, title="A validated type", languages="java,python"]
 
 <1> Micronaut Validation validates introspected types, annotated with `@Introspected` or `@Serdeable`.
 
-snippet::io.micronaut.camel.docs.integrations.TicketRoutes[tags="routes", indent=0, title="Validating the body", languages="java"]
+snippet::io.micronaut.camel.docs.integrations.TicketRoutes[tags="routes", indent=0, title="Validating the body", languages="java,python"]
 
 <1> An invalid ticket fails the exchange with a `BeanValidationException`, which lists the constraint violations.
 
@@ -198,7 +198,7 @@ micronaut:
         path: /var/documents
 ----
 
-snippet::io.micronaut.camel.docs.integrations.DocumentRoutes[tags="routes", indent=0, title="Storing and reading objects", languages="java,kotlin,groovy"]
+snippet::io.micronaut.camel.docs.integrations.DocumentRoutes[tags="routes", indent=0, title="Storing and reading objects"]
 
 <1> The URI names the object storage configuration: `documents`. The bucket, or container, is part of that configuration. `object-storage:default` uses the only object storage of the application.
 <2> The `get` operation reads the object into the body, as a byte array, or `null` when there is no such object.
@@ -218,7 +218,7 @@ micronaut:
         url: http://localhost:8081
 ----
 
-snippet::io.micronaut.camel.docs.integrations.InventoryRoutes[tags="routes", indent=0, title="Calling a service", languages="java"]
+snippet::io.micronaut.camel.docs.integrations.InventoryRoutes[tags="routes", indent=0, title="Calling a service", languages="java,python"]
 
 <1> The URI is the service ID and a path, `inventory/stock`, to which the `CamelHttpPath` header is appended. A URL, such as `micronaut-http:https://example.com/stock`, also works. The parameters that are not options of the endpoint are the query of the request, unless the `CamelHttpQuery` header sets one.
 
@@ -246,7 +246,7 @@ camel:
     mcp-tags: weather
 ----
 
-snippet::io.micronaut.camel.docs.integrations.WeatherTools[tags="routes", indent=0, title="A tool", languages="java"]
+snippet::io.micronaut.camel.docs.integrations.WeatherTools[tags="routes", indent=0, title="A tool", languages="java,python"]
 
 <1> The tool is exposed because its tag, `weather`, is selected. Its parameters describe its input schema.
 <2> The arguments of a call are message headers, and the body is the result of the call.
