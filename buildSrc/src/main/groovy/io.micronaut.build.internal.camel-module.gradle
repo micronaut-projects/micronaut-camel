@@ -1,0 +1,13 @@
+plugins {
+    id 'io.micronaut.build.internal.camel-base'
+    id "io.micronaut.build.internal.module"
+}
+
+micronautBuild {
+    // No released version to compare against before 1.0.0
+    binaryCompatibility.enabledAfter("1.0.0")
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+}

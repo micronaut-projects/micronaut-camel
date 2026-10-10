@@ -1,0 +1,5 @@
+// Settings shared by every project of the build
+
+repositories {
+    mavenCentral()
+}

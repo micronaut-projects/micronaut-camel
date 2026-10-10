@@ -1,1 +1,5 @@
-TODO
+This project integrates https://camel.apache.org[Apache Camel] with Micronaut. Camel routes are written in the Java DSL or the YAML DSL, and they run inside the Micronaut application context: Micronaut beans are visible to Camel's registry, and Micronaut configuration resolves Camel's property placeholders.
+
+The integration targets Camel 4 and Micronaut 5. Camel components are added as plain Camel dependencies, such as `org.apache.camel:camel-kafka`, and configured under `camel.component.<name>`. No Micronaut-specific artifact is needed per component.
+
+WARNING: This project is under development.

@@ -1,0 +1,51 @@
+#
+# This file is used to declare the list of libraries
+# which are used as dependencies in the project.
+# See https://docs.gradle.org/7.4.2/userguide/platforms.html#sub:central-declaration-of-dependencies
+#
+# For Micronaut, we have 3 kinds of dependencies:
+#   - managed dependencies, which are exposed to consumers via a BOM (or version catalog)
+#   - managed BOMs, which are imported into the BOM that we generate
+#   - all other dependencies, which are implementation details
+#
+# If a library needs to appear in the BOM of the project, then it must be
+# declared with the "managed-" prefix.
+# If a BOM needs to be imported in the BOM of the project, then it must be
+# declared with the "boms-" prefix.
+# Both managed dependencies and BOMs need to have their version declared via
+# a managed version (a version which alias starts with "managed-"
+
+[versions]
+micronaut = "5.2.15"
+micronaut-docs = "3.0.0"
+micronaut-test = "5.2.0"
+micronaut-logging = "2.1.0"
+groovy = "4.0.24"
+spock = "2.3-groovy-4.0"
+
+# Managed versions appear in the BOM
+managed-camel = "4.22.1"
+
+[libraries]
+# Core
+micronaut-core = { module = 'io.micronaut:micronaut-core-bom', version.ref = 'micronaut' }
+micronaut-logging = { module = "io.micronaut.logging:micronaut-logging-bom", version.ref = "micronaut-logging" }
+
+#
+# Managed dependencies appear in the BOM
+#
+# managed-somelib = { module = "group:artifact", version.ref = "managed-somelib" }
+
+#
+# Imported BOMs, also appearing in the generated BOM
+#
+boms-camel = { module = "org.apache.camel:camel-bom", version.ref = "managed-camel" }
+
+# Other libraries used by the project but non managed
+
+# Versions from boms-camel
+camel-main = { module = "org.apache.camel:camel-main" }
+
+[bundles]
+
+[plugins]

@@ -1,0 +1,16 @@
+plugins {
+    id 'io.micronaut.build.internal.camel-module'
+}
+
+dependencies {
+    annotationProcessor(mn.micronaut.inject.java)
+
+    api(mn.micronaut.context)
+    api(platform(libs.boms.camel))
+    api(libs.camel.main)
+
+    testAnnotationProcessor(mn.micronaut.inject.java)
+    testImplementation(mnTest.micronaut.test.junit5)
+    testRuntimeOnly(mnTest.junit.jupiter.engine)
+    testRuntimeOnly(mnTest.junit.platform.launcher)
+}

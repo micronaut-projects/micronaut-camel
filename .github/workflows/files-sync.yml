@@ -1,72 +1,148 @@
 name: Files sync
 on:
-  push:
-    branches:
-      - master
+  workflow_dispatch:
+    inputs:
+      project_slug:
+        description: 'Project slug without the micronaut- prefix. Leave empty to sync every project.'
+        required: false
+        type: string
+  schedule:
+    - cron: '0 1 * * *'
+      timezone: 'Europe/Madrid'
+
+permissions:
+  contents: read
+
 jobs:
+  prepare-matrix:
+    if: github.repository == 'micronaut-projects/micronaut-project-template'
+    runs-on: ubuntu-latest
+    outputs:
+      repos: ${{ steps.prepare.outputs.repos }}
+    steps:
+      - name: Prepare repository matrix
+        id: prepare
+        shell: bash
+        run: |
+          repos=(
+            acme
+            aot
+            avro
+            aws
+            azure
+            build-plugin-sourcegen
+            cache
+            cassandra
+            chatbots
+            coherence
+            control-panel
+            core
+            crac
+            data
+            discovery-client
+            eclipsestore
+            elasticsearch
+            email
+            flyway
+            fuzzing
+            gcp
+            graphql
+            groovy
+            graal-languages
+            grpc
+            guice
+            hibernate-validator
+            jackson-xml
+            jakarta-el
+            jaxrs
+            jms
+            jmx
+            json-schema
+            kafka
+            kotlin
+            kubernetes
+            langchain4j
+            liquibase
+            logging
+            mcp
+            micrometer
+            mongodb
+            mqtt
+            multitenancy
+            nats
+            neo4j
+            object-storage
+            openapi
+            openrewrite
+            opensearch
+            oracle-cloud
+            picocli
+            platform
+            problem-json
+            projectgen
+            pulsar
+            r2dbc
+            rabbitmq
+            reactor
+            redis
+            rss
+            rxjava3
+            security
+            serialization
+            servlet
+            session
+            sourcegen
+            spring
+            sql
+            test
+            test-resources
+            toml
+            tracing
+            validation
+            views
+          )
+
+          slug="${{ github.event.inputs.project_slug }}"
+
+          if [ -n "${slug}" ]; then
+            for repo in "${repos[@]}"; do
+              if [ "${repo}" = "${slug}" ]; then
+                printf 'repos=["%s"]\n' "${slug}" >> "${GITHUB_OUTPUT}"
+                exit 0
+              fi
+            done
+
+            echo "Unknown project slug: ${slug}" >&2
+            exit 1
+          fi
+
+          json="["
+          for repo in "${repos[@]}"; do
+            if [ "${json}" != "[" ]; then
+              json+=","
+            fi
+            json+="\"${repo}\""
+          done
+          json+="]"
+
+          echo "repos=${json}" >> "${GITHUB_OUTPUT}"
+
   sync-files:
+    needs: prepare-matrix
     if: github.repository == 'micronaut-projects/micronaut-project-template'
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
+      max-parallel: 3
       matrix:
-        repo:
-          - acme
-          - aws
-          - azure
-          - cache
-          - cassandra
-          - core
-          - couchbase
-          - data
-          - discovery-client
-          - elasticsearch
-          - flyway
-          - gcp
-          - gradle-plugin
-          - graphql
-          - groovy
-          - grpc
-          - hibernate-validator
-          - ignite
-          - jackson-xml
-          - jaxrs
-          - jms
-          - jmx
-          - kafka
-          - kotlin
-          - kubernetes
-          - liquibase
-          - micrometer
-          - mongodb
-          - multitenancy
-          - mqtt
-          - nats
-          - neo4j
-          - netflix
-          - openapi
-          - oracle-cloud
-          - picocli
-          - r2dbc
-          - rabbitmq
-          - ratelimiter
-          - reactor
-          - redis
-          - rss
-          - rxjava1
-          - rxjava3
-          - security
-          - servlet
-          - spring
-          - sql
-          - test
-          - views
+        repo: ${{ fromJson(needs.prepare-matrix.outputs.repos) }}
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           path: source
       - name: Checkout target - default branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: micronaut-projects/micronaut-${{ matrix.repo }}
           path: target
@@ -78,33 +154,69 @@ jobs:
         run: |
           branch=$(git rev-parse --abbrev-ref HEAD)
           echo "Current branch: ${branch}"
-          echo ::set-output name=branch::${branch}
+          echo "branch=${branch}" >> $GITHUB_OUTPUT
       - name: Sync workflows
         run: |
           mkdir -p target/.github/workflows/
-          rsync --verbose --verbose  --delete --archive -F "source/.github/workflows/" "target/.github/workflows/"
+          rsync --verbose --verbose  --archive -F "source/.github/workflows/" "target/.github/workflows/"
+          rm -f target/.github/dependabot.yml
+          rm -f target/.github/stale.yml
+          rm -f target/.github/release-drafter.yml
+          rm -f target/.github/workflows/release-notes.yml
+          rm -f target/.github/workflows/dependency-update.yml
+          rm -f target/.github/workflows/sonarqube.yml
       - name: Copy files from source to target branches
         run: |
           while IFS= read -r file; do
-              dest="$(dirname $file)"
-              mkdir -p target/$dest
-              cp -r source/$file target/$dest
+              dest_dirname="$(dirname $file)"
+              dest_filename="$(basename $file)"
+              mkdir -p target/$dest_dirname
+              [ ! -f target/${dest_dirname}/${dest_filename}.lock ] && cp source/$file target/${dest_dirname}/${dest_filename}
           done <<< "$FILES"
         env:
           FILES: |-
-            .github/dependabot.yml
-            gradle/*
-            gradlew*
+            .clineignore
+            .editorconfig
+            .gitattributes
             .gitignore
-            ISSUE_TEMPLATE.md
+            .github/renovate.json
+            .github/release.yml
+            .github/scripts/vulnerability-audit.sh
+            .github/scripts/vulnerability-audit-filter.py
+            .github/ISSUE_TEMPLATE/bug_report.yaml
+            .github/ISSUE_TEMPLATE/config.yml
+            .github/ISSUE_TEMPLATE/new_feature.yaml
+            .github/ISSUE_TEMPLATE/other.yaml
+            .sdkmanrc
+            gradle/wrapper/gradle-wrapper.jar
+            gradle/wrapper/gradle-wrapper.properties
+            gradlew
+            gradlew.bat
             MAINTAINING.md
+            SECURITY.md
             LICENSE
             config/HEADER
             config/spotless.license.java
             config/checkstyle/checkstyle.xml
             config/checkstyle/suppressions.xml
+      - name: Copy all skills from source to target branches
+        run: |
+          rsync_args=(-a --delete --exclude='*.lock')
+          if [ -d "target/.agents/skills" ]; then
+              while IFS= read -r -d '' lock_file; do
+                  skill_file="${lock_file%.lock}"
+                  rel="${skill_file#target/.agents/skills/}"
+                  rsync_args+=(--exclude="$rel")
+              done < <(find "target/.agents/skills" -name "*.lock" -print0)
+          fi
+          mkdir -p target/.agents/skills
+          rsync "${rsync_args[@]}" source/.agents/skills/ target/.agents/skills/
+      - name: Sleep for 3 minutes to avoid rate limiting
+        run: sleep 180s
+        shell: bash
       - name: Create Pull Request - ${{ steps.branch.outputs.branch }}
-        uses: peter-evans/create-pull-request@v3.8.2
+        id: cpr
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
         with:
           path: target
           token: ${{ secrets.GH_TOKEN }}
@@ -116,6 +228,59 @@ jobs:
           labels: "relates-to: build"
           branch: sync-files-${{ steps.branch.outputs.branch }}
           base: ${{ steps.branch.outputs.branch }}
+          add-paths: |
+            .clineignore
+            .editorconfig
+            .gitattributes
+            .gitignore
+            .agents/skills
+            .github/*
+            .github/scripts/*
+            .github/ISSUE_TEMPLATE/*
+            .github/workflows/*
+            .sdkmanrc
+            gradle/*
+            gradlew*
+            MAINTAINING.md
+            SECURITY.md
+            LICENSE
+            config/HEADER
+            config/spotless.license.java
+            config/checkstyle/checkstyle.xml
+            config/checkstyle/suppressions.xml
+      - name: Wait for CI and merge if green
+        if: steps.cpr.outputs.pull-request-number != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
+        run: |
+          set -euo pipefail
 
+          head_sha="$(gh pr view "${PR_URL}" --json headRefOid --jq '.headRefOid')"
 
+          echo "Waiting for checks to appear..."
+          for i in {1..30}; do
+            check_count="$(gh pr checks "${PR_URL}" --json name --jq 'length' 2>/dev/null || echo 0)"
+            if [ "${check_count}" -gt 0 ]; then
+              break
+            fi
+            sleep 10
+          done
 
+          if [ "${check_count}" -eq 0 ]; then
+            echo "No checks appeared for ${PR_URL}; leaving PR open."
+            exit 0
+          fi
+
+          echo "Waiting for required checks..."
+          if gh pr checks "${PR_URL}" --required --watch --fail-fast --interval 30; then
+            echo "Checks passed; merging ${PR_URL}."
+            gh pr merge "${PR_URL}" \
+              --squash \
+              --delete-branch \
+              --match-head-commit "${head_sha}"
+          else
+            echo "Checks failed, were cancelled, or timed out; leaving PR open."
+            exit 0
+          fi
