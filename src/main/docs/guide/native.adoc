@@ -24,14 +24,68 @@ public class PriceService {
 }
 ----
 
-The same applies to the types of message bodies that Camel converts or serializes by reflection, such as POJOs bound by Jackson rather than Micronaut Serialization.
+The same applies to the types of message bodies that Camel converts or serializes by reflection, such as POJOs bound by the `jackson` data format of camel-jackson rather than Micronaut Serialization.
+
+=== Data sources
+
+The `sql` and `jdbc` components read the URL and the user of their data source by reflection, to describe the service they connect to. The feature registers these getters (`url`, `jdbcUrl`, `user`, `username`...) of the data source classes of the image, such as the Hikari data source of `micronaut-jdbc-hikari`.
+
+=== Java serialization of exchanges
+
+Some aggregation repositories, such as camel-sql's `JdbcAggregationRepository` and camel-leveldb's `LevelDBAggregationRepository`, store the exchanges with Java serialization, in a `DefaultExchangeHolder`. When the holder is part of the image, the feature registers it for serialization, with the JDK types of the bodies and headers it commonly holds: strings, numbers, booleans, characters, `byte[]`, `UUID`, `Date` and the `ArrayList`, `LinkedList`, `HashMap`, `LinkedHashMap`, `TreeMap`, `HashSet`, `LinkedHashSet` and `TreeSet` collections.
+
+Register the other types of serialized bodies and headers in the reachability metadata of the application, `src/main/resources/META-INF/native-image/<group>/<artifact>/reachability-metadata.json`:
+
+[source,json]
+----
+{
+  "reflection": [
+    { "type": "com.example.Order", "serializable": true }
+  ]
+}
+----
+
+Alternatively, store the exchanges as JSON with Micronaut Serialization, whose `@Serdeable` types need no metadata: the `JsonJdbcCamelCodec` of the JDBC aggregation repository (see <<transactions, Transactions and Databases>>), the `JsonLevelDBSerializer` of the LevelDB repository, or the `MicronautCacheAggregationRepository` on a Micronaut cache.
 
 === Unsupported in a native image
 
 * Routes written in the Java DSL and compiled at runtime (jOOR), Groovy routes and other languages compiled at runtime, and route reloading
 * Package scanning for `@Converter` classes: use the generated loaders
 * JMX management (`camel-management`)
-* Java serialization of message bodies of unregistered types, used by some aggregation repositories and by JMS `ObjectMessage`
+* Java serialization of message bodies of types that are not registered for serialization, used by some aggregation repositories and by JMS `ObjectMessage`
 * Simple language OGNL calls, `${type:...}` and `#class:` references to classes that are not registered for reflection
+
+=== Micronaut AOT
+
+Camel looks up a service file on the classpath for each extension it resolves by name, and reads the lists of type converter loaders of every JAR when the context starts. The `micronaut-camel-aot` module is a https://micronaut-projects.github.io/micronaut-aot/latest/guide/[Micronaut AOT] optimization, `camel.service.index`, that indexes these service files when the application is built, for the JVM and for native images. The generated code loads the index as a Micronaut static optimization, and Micronaut Camel then creates a Camel context whose factory finders and type converter find the classes in the index. Service files that are not in the index, such as those of JARs added at runtime, are still looked up on the classpath. The classes are loaded and initialized at runtime, as without the index.
+
+With the Micronaut Gradle plugin, add the module to the AOT plugins, with the version of `micronaut-camel-core`, and enable the optimization:
+
+[source,groovy]
+----
+dependencies {
+    aotPlugins("io.micronaut.camel:micronaut-camel-aot")
+}
+
+micronaut {
+    aot {
+        configurationProperties.put("camel.service.index.enabled", "true")
+    }
+}
+----
+
+With Maven, add the module to the `aotDependencies` of the Micronaut Maven plugin, and `camel.service.index.enabled=true` to `aot.properties`.
+
+=== Runtime class loading
+
+GraalVM 25 has experimental support for loading classes at runtime in a native image (Crema), with `-H:+UnlockExperimentalVMOptions -H:+RuntimeClassLoading`. Micronaut Camel initializes everything at runtime, so it does not prevent it. `./gradlew :test-suite-graal:nativeTest -Pcrema` builds the native test image with these options.
+
+With GraalVM 25.0.4, the whole native test suite passes in such an image, the Kafka, SQL and Jackson tests included. The image is larger (about 320 MB instead of 170 MB for the test suite), as it keeps the open type world that runtime class loading needs. At runtime the image warns that the boot class loader is unavailable unless `java.home` is set, which only matters for classes loaded at runtime from the JDK.
+
+An image with runtime class loading has no file system of its resources to list, so the feature also writes the list of the route resources of the image (under `camel/`, `camel-rest/`, `camel-template/` and `kamelets/`), from which YAML routes such as `classpath:camel/*` are found.
+
+=== Tested components
+
+The `test-suite-graal` project of Micronaut Camel runs routes in a native image with `./gradlew :test-suite-graal:nativeTest`. It covers the Java and YAML DSLs, bean binding, the Camel annotations, `platform-http` with the REST DSL, JSON with Micronaut Serialization (including type conversion), the `jackson` data format of camel-jackson, the `sql` component and `JdbcAggregationRepository` (with Java serialization and with JSON) on an H2 data source of `micronaut-jdbc-hikari`, and the `kafka` component. The Kafka test gets its broker from https://micronaut-projects.github.io/micronaut-test-resources/latest/guide/[Micronaut Test Resources], whose server, started by the `io.micronaut.test-resources` Gradle plugin, provides `kafka.bootstrap.servers` to the native test binary; the test is skipped when the server cannot start Kafka, for example without a container runtime.
 
 Camel components whose third-party libraries need reachability metadata get it from the https://github.com/oracle/graalvm-reachability-metadata[GraalVM Reachability Metadata Repository], which the Micronaut and GraalVM Gradle and Maven plugins enable.

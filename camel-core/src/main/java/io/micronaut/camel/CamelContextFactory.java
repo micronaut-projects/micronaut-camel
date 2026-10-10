@@ -16,6 +16,8 @@
 package io.micronaut.camel;
 
 import io.micronaut.camel.graal.NativePackageScanResourceResolver;
+import io.micronaut.camel.optimizations.CamelServiceIndex;
+import io.micronaut.camel.optimizations.IndexedCamelContext;
 import io.micronaut.camel.properties.MicronautPropertiesSource;
 import io.micronaut.camel.registry.CamelInternal;
 import io.micronaut.camel.registry.MicronautBeanRepository;
@@ -58,7 +60,10 @@ final class CamelContextFactory {
     @CamelInternal
     @Bean(preDestroy = "shutdownCamel")
     MicronautCamelMain camelMain(BeanContext beanContext, Environment environment, ConversionService conversionService) {
-        DefaultCamelContext camelContext = new DefaultCamelContext(false);
+        // the index of Camel's service files, when Micronaut AOT computed it with micronaut-camel-aot
+        DefaultCamelContext camelContext = CamelServiceIndex.find()
+            .<DefaultCamelContext>map(IndexedCamelContext::new)
+            .orElseGet(() -> new DefaultCamelContext(false));
         // camel-main sets the name once the context is built, too late for the names of Camel's threads
         environment.getProperty("camel.main.name", String.class).ifPresent(camelContext.getCamelContextExtension()::setName);
         MicronautRegistry registry = new MicronautRegistry(new MicronautBeanRepository(beanContext));

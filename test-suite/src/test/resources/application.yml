@@ -11,6 +11,9 @@ micronaut:
     # the idempotent repository of io.micronaut.camel.docs.integrations.IntegrationRoutes
     imports:
       maximum-size: 1000
+    # the aggregation repository of io.micronaut.camel.docs.integrations.BasketRepositories
+    baskets:
+      maximum-size: 1000
   executors:
     # micronaut-kafka, micronaut-nats and micronaut-rabbitmq each declare a "consumer" executor:
     # configuring it explicitly makes it unique when all of them are on the test classpath

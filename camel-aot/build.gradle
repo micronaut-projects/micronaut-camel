@@ -1,0 +1,17 @@
+plugins {
+    id 'io.micronaut.build.internal.camel-module'
+}
+
+dependencies {
+    // the Micronaut AOT API, provided when the optimizations run
+    compileOnly(libs.micronaut.aot.core)
+    // the generated code creates a CamelServiceIndex of micronaut-camel-core, which the application has
+    compileOnly(projects.micronautCamelCore)
+
+    testImplementation(libs.micronaut.aot.core)
+    testImplementation(projects.micronautCamelCore)
+    testImplementation(libs.camel.timer)
+    testImplementation(mnTest.junit.jupiter.api)
+    testRuntimeOnly(mnTest.junit.jupiter.engine)
+    testRuntimeOnly(mnTest.junit.platform.launcher)
+}

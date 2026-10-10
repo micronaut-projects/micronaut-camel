@@ -21,6 +21,7 @@ dependencyResolutionManagement {
 
 rootProject.name = 'camel-parent'
 
+include 'camel-aot'
 include 'camel-bom'
 include 'camel-configuration'
 include 'camel-core'

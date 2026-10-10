@@ -1,0 +1,5 @@
+camel:
+  component:
+    kafka:
+      # resolved by Micronaut Test Resources
+      brokers: ${kafka.bootstrap.servers}

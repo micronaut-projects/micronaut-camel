@@ -1,8 +1,22 @@
 // Runs Camel routes in a native image: ./gradlew :test-suite-graal:nativeTest
+// The Kafka test gets its broker from Micronaut Test Resources, and is skipped without a container runtime.
+// With -Pcrema, the image supports runtime class loading (Crema), which GraalVM 25 ships as experimental.
 plugins {
     id 'java-library'
     id 'io.micronaut.build.internal.camel-tests'
+    id 'io.micronaut.minimal.library'
+    id 'io.micronaut.test-resources'
     id 'org.graalvm.buildtools.native'
+}
+
+micronaut {
+    version = libs.versions.micronaut.asProvider().get()
+    importMicronautPlatform = false
+    testResources {
+        version = libs.versions.micronaut.test.resources.get()
+        additionalModules.add('kafka')
+        clientTimeout = 180
+    }
 }
 
 dependencies {
@@ -19,13 +33,19 @@ dependencies {
     testAnnotationProcessor(mnSerde.micronaut.serde.processor)
     testImplementation(libs.camel.bean)
     testImplementation(libs.camel.direct)
+    testImplementation(libs.camel.jackson)
+    testImplementation(libs.camel.kafka)
     testImplementation(libs.camel.log)
     testImplementation(libs.camel.seda)
+    testImplementation(libs.camel.sql)
     testImplementation(libs.camel.timer)
     testImplementation(libs.camel.yaml.dsl)
+    testImplementation(mnSql.micronaut.jdbc.hikari)
     testImplementation(mnTest.micronaut.test.junit5)
+    testImplementation(libs.micronaut.test.resources.client)
     testRuntimeOnly(mn.snakeyaml)
     testRuntimeOnly(mnLogging.logback.classic)
+    testRuntimeOnly(mnSql.h2)
 }
 
 graalvmNative {
@@ -36,6 +56,9 @@ graalvmNative {
         all {
             resources.autodetect()
             buildArgs.add('-H:+ReportExceptionStackTraces')
+            if (providers.gradleProperty('crema').isPresent()) {
+                buildArgs.addAll('-H:+UnlockExperimentalVMOptions', '-H:+RuntimeClassLoading')
+            }
         }
     }
 }

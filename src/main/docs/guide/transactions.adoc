@@ -117,6 +117,25 @@ snippet::io.micronaut.camel.docs.transactions.OrderRoutes[tags="routes", indent=
 
 `JdbcAggregationRepository` is created the same way, with `new JdbcAggregationRepository(transactionManager, "aggregation", transactionManager.getDataSource())`.
 
+=== Storing aggregated exchanges as JSON
+
+`JdbcAggregationRepository` stores the exchanges being aggregated with Java serialization by default, so every body and header must be `Serializable`, and, in a native image, registered for serialization. The `JsonJdbcCamelCodec` bean of `micronaut-camel-core` stores them as JSON with the Micronaut `JsonMapper` instead, when `micronaut-serde-jackson` (or `micronaut-jackson-databind`) is on the classpath:
+
+snippet::io.micronaut.camel.docs.transactions.OrderAggregations[tags="repository", indent=0, title="An aggregation repository storing JSON", languages="java"]
+
+<1> The codec is a bean.
+<2> The repository writes and reads its exchanges with the codec.
+
+The JSON keeps the type of every value, so that the body and the headers are read back with their types. The codec stores:
+
+* bodies and headers of JDK value types: strings, numbers, booleans, characters, `byte[]`, `UUID`, `Date` and the `java.time` types
+* bodies and headers of the types introspected at compile time, such as `@Serdeable` types with Micronaut Serialization, which need no reflection in a native image
+* lists, sets and maps with string keys of such values, such as the list of a body grouped by the aggregation strategy
+
+Like Camel's own codec, it stores the exchange ID, the body, the headers and the aggregation properties. Headers of other types are left out, and a body of another type fails the aggregation. The headers of introspected types are stored only with the repository's `allowSerializedHeaders` option. Other types are never instantiated from the stored type names, so the repository's `deserializationFilter` is not needed. The tables are the same as with Java serialization.
+
+The `JsonExchangeCodec` bean behind the codec can be used by other repositories, such as `MicronautCacheAggregationRepository` (see the <<integrations, Micronaut integrations>>), and the `JsonLevelDBSerializer` bean stores the exchanges of camel-leveldb's `LevelDBAggregationRepository` with it, with `repository.setSerializer(serializer)`.
+
 === JPA
 
 The `jpa` component uses Spring's transaction support: it joins a transaction that Spring's `HibernateTransactionManager` started, through a shared entity manager. Run Micronaut transactions on that transaction manager with Micronaut Data Spring JPA:
