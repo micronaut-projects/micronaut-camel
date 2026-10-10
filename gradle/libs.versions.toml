@@ -121,7 +121,6 @@ camel-ehcache = { module = "org.apache.camel:camel-ehcache" }
 camel-google-bigquery = { module = "org.apache.camel:camel-google-bigquery" }
 camel-google-pubsub = { module = "org.apache.camel:camel-google-pubsub" }
 camel-hazelcast = { module = "org.apache.camel:camel-hazelcast" }
-camel-master = { module = "org.apache.camel:camel-master" }
 camel-pulsar = { module = "org.apache.camel:camel-pulsar" }
 camel-servlet = { module = "org.apache.camel:camel-servlet" }
 camel-catalog = { module = "org.apache.camel:camel-catalog" }
