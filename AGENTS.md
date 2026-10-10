@@ -25,6 +25,8 @@ Micronaut Camel integrates Apache Camel 4 with Micronaut 5. It was created from 
 
 ## Code
 
+- Integrations with other Micronaut modules live in `camel-core` sub-packages (`event`, `scheduling`, `cache`, `json`, `vault`...) behind `@Requires`, with `compileOnly` dependencies: no module per integration.
+
 - JSpecify `@NullMarked` goes only on `package-info.java`; every package has one. Use `org.jspecify.annotations.Nullable` for nullable types.
 
 ## Documentation

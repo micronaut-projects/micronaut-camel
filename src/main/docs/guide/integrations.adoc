@@ -1,0 +1,42 @@
+Besides the beans that Camel autowires from the Micronaut application context, Micronaut Camel adds the following integrations with Micronaut features. Each applies only when the Micronaut feature it uses is on the classpath.
+
+=== Application events
+
+The `micronaut-event` component connects routes to Micronaut application events. A producer publishes the message body as an event, converted to the type in the URI; a consumer receives the events of that type, or every event with `micronaut-event:all`:
+
+snippet::io.micronaut.camel.docs.integrations.OrderEventRoutes[tags="routes", indent=0, title="Publishing and consuming application events"]
+
+<1> Publishes the body as an `OrderPlaced` event, which `@EventListener` methods receive.
+<2> Receives the `OrderPlaced` events, published by any bean with `ApplicationEventPublisher`.
+
+Consumers receive the events on the thread that publishes them.
+
+=== Scheduling polling consumers
+
+Camel's polling consumers, such as the `file`, `ftp` and `sql` consumers, can run on the Micronaut task scheduler with `scheduler=micronaut`, which replaces the `spring` scheduler of Spring Boot. With `scheduler.cron`, the consumer polls on a cron expression (with `+` for the spaces in a URI, and an optional `scheduler.zoneId`); otherwise it polls with the consumer's `initialDelay` and `delay`.
+
+=== Idempotent repositories on Micronaut caches
+
+`MicronautCacheIdempotentRepository` stores the keys of the idempotent consumer EIP, or of the `file` consumer's `idempotentRepository` option, in a Micronaut cache: Caffeine, Redis, Hazelcast, Infinispan or any other https://micronaut-projects.github.io/micronaut-cache/latest/guide/[Micronaut Cache] implementation.
+
+snippet::io.micronaut.camel.docs.integrations.ImportRepositories[tags="repository", indent=0, title="An idempotent repository on a cache", languages="java"]
+
+<1> The cache configured under `micronaut.caches.imports`.
+
+=== JSON with Micronaut Serialization
+
+The `micronaut-json` data format reads and writes JSON with the Micronaut `JsonMapper`: https://micronaut-projects.github.io/micronaut-serialization/latest/guide/[Micronaut Serialization], whose `@Serdeable` types are introspected at compile time instead of by reflection, or Jackson with `micronaut-jackson-databind`. Use it in routes with `marshal().custom("micronaut-json")` and `unmarshal().custom("micronaut-json")`, or in the REST DSL with `camel.rest.json-data-format=micronaut-json`. To unmarshal to a type, configure a `MicronautJsonDataFormat` with `setUnmarshalType`.
+
+The routes below use the three integrations above:
+
+snippet::io.micronaut.camel.docs.integrations.IntegrationRoutes[tags="routes", indent=0, title="Routes using Micronaut features", languages="java"]
+
+<1> The `file` consumer polls every second on the Micronaut scheduler.
+<2> The idempotent consumer uses the `imports` repository.
+<3> The body is written as JSON with the Micronaut JSON mapper.
+
+=== Secrets and HashiCorp Vault
+
+Micronaut's distributed configuration loads secrets into the environment at startup, from AWS Secrets Manager and Parameter Store, Google Cloud Secret Manager, Azure Key Vault, Oracle Cloud Vault, HashiCorp Vault and Kubernetes. Camel's `{{...}}` placeholders resolve against the environment, so routes can use these secrets without Camel's own vault support.
+
+When the Micronaut Vault client is configured, with `vault.client.uri` and `vault.client.token`, Camel's HashiCorp Vault support uses the same server, so `{{hashicorp:...}}` placeholders and the `hashicorp-vault` component work without `camel.vault.hashicorp.*` options. Options set under `camel.vault.hashicorp` take precedence.
