@@ -15,6 +15,7 @@ Micronaut Camel integrates Apache Camel 4 with Micronaut 5. It was created from 
 - `buildSrc/src/main/groovy/io.micronaut.build.internal.camel-*.gradle` holds the convention plugins: `camel-base`, `camel-module` for published modules, and `camel-tests` for the test suites.
 - `test-suite`, `test-suite-kotlin` (KSP) and `test-suite-groovy` (Spock) hold the guide samples. Every sample is a `snippet::` with the same fully qualified name, under `io.micronaut.camel.docs`, in each suite. The suites have the Netty server, so every `@MicronautTest` starts a server.
 - `test-suite/src/test/java/io/micronaut/camel/examples/<name>` ports a camel-spring-boot-examples example: its beans are `@Requires(env = "example-<name>")`, its test is `@MicronautTest(environments = "example-<name>")` and its configuration is `application-example-<name>.yml`.
+- `test-suite-graal` runs Camel in a native image with `./gradlew :test-suite-graal:nativeTest` (GraalVM 25). The `CamelNativeFeature` of `camel-core` registers the classes of Camel's service files and the classes the processor lists under `META-INF/micronaut-camel/native`; keep new reflective or service-file-based features covered there.
 - `.agents/skills/` is shared agent guidance synced from the template.
 
 ## Scope

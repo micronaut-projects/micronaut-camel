@@ -1,0 +1,37 @@
+Micronaut Camel applications can be compiled to a GraalVM native image. Camel resolves its components, data formats, languages and configurers by name from service files and instantiates them by reflection; when the image is built, a GraalVM feature of `micronaut-camel-core` registers every class those service files name, so no reachability metadata needs to be written by hand. The feature also registers the route builders, which Camel inspects, and the exception types that `onException` and `doCatch` refer to.
+
+Everything else is initialized at runtime, as on the JVM: the `CamelContext` is created and configured when the application starts, from the same configuration.
+
+With the annotation processor:
+
+* the `@EndpointInject` and `@Produce` injection points, the `@Converter` loaders and the camel-main configuration are generated code, which needs no reflection
+* the interfaces that `@Produce` proxies and the beans whose `@Consume` methods Camel invokes are registered for the image
+
+The `micronaut-json` data format with https://micronaut-projects.github.io/micronaut-serialization/latest/guide/[Micronaut Serialization] reads and writes JSON without reflection, including for the REST DSL. YAML routes are found on the classpath of the image, and `platform-http` routes are served by the Micronaut HTTP server.
+
+=== Beans called from routes
+
+Camel invokes the methods of a bean called from a route, with `bean(...)`, a `bean:` endpoint or the `method` language, by reflection. Annotate such beans with `@ReflectiveAccess`:
+
+[source,java]
+----
+@Singleton
+@ReflectiveAccess
+public class PriceService {
+    public int priceOf(String item) {
+        return item.length() * 10;
+    }
+}
+----
+
+The same applies to the types of message bodies that Camel converts or serializes by reflection, such as POJOs bound by Jackson rather than Micronaut Serialization.
+
+=== Unsupported in a native image
+
+* Routes written in the Java DSL and compiled at runtime (jOOR), Groovy routes and other languages compiled at runtime, and route reloading
+* Package scanning for `@Converter` classes: use the generated loaders
+* JMX management (`camel-management`)
+* Java serialization of message bodies of unregistered types, used by some aggregation repositories and by JMS `ObjectMessage`
+* Simple language OGNL calls, `${type:...}` and `#class:` references to classes that are not registered for reflection
+
+Camel components whose third-party libraries need reachability metadata get it from the https://github.com/oracle/graalvm-reachability-metadata[GraalVM Reachability Metadata Repository], which the Micronaut and GraalVM Gradle and Maven plugins enable.

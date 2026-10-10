@@ -1,0 +1,41 @@
+// Runs Camel routes in a native image: ./gradlew :test-suite-graal:nativeTest
+plugins {
+    id 'java-library'
+    id 'io.micronaut.build.internal.camel-tests'
+    id 'org.graalvm.buildtools.native'
+}
+
+dependencies {
+    testAnnotationProcessor(mn.micronaut.inject.java)
+    testAnnotationProcessor(mn.micronaut.graal)
+    testAnnotationProcessor(projects.micronautCamelProcessor)
+    testImplementation(projects.micronautCamelCore)
+    testImplementation(projects.micronautCamelTest)
+    testImplementation(projects.micronautCamelHttp)
+    testImplementation(libs.camel.rest)
+    testImplementation(mn.micronaut.http.server.netty)
+    testImplementation(mn.micronaut.http.client)
+    testImplementation(mnSerde.micronaut.serde.jackson)
+    testAnnotationProcessor(mnSerde.micronaut.serde.processor)
+    testImplementation(libs.camel.bean)
+    testImplementation(libs.camel.direct)
+    testImplementation(libs.camel.log)
+    testImplementation(libs.camel.seda)
+    testImplementation(libs.camel.timer)
+    testImplementation(libs.camel.yaml.dsl)
+    testImplementation(mnTest.micronaut.test.junit5)
+    testRuntimeOnly(mn.snakeyaml)
+    testRuntimeOnly(mnLogging.logback.classic)
+}
+
+graalvmNative {
+    metadataRepository {
+        enabled = true
+    }
+    binaries {
+        all {
+            resources.autodetect()
+            buildArgs.add('-H:+ReportExceptionStackTraces')
+        }
+    }
+}

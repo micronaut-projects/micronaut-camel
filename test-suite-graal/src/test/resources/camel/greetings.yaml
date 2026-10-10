@@ -1,0 +1,9 @@
+- route:
+    id: yaml-greeting
+    from:
+      uri: direct:yaml-greeting
+      steps:
+        - setBody:
+            expression:
+              simple:
+                expression: "Hello from YAML, ${body}"

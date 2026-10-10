@@ -1,0 +1,11 @@
+{
+  "resources": [
+    { "glob": "META-INF/services/org/apache/camel/**" },
+    { "glob": "META-INF/micronaut-camel/**" },
+    { "glob": "org/apache/camel/main/*.properties" },
+    { "glob": "camel/**" },
+    { "glob": "camel-template/**" },
+    { "glob": "camel-rest/**" },
+    { "glob": "kamelets/**" }
+  ]
+}

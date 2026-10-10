@@ -14,6 +14,8 @@ dependencies {
     // integrations that apply when the Micronaut module is present
     compileOnly(mn.micronaut.json.core)
     compileOnly(mnCache.micronaut.cache.core)
+    // the GraalVM feature, only used when building a native image
+    compileOnly(mn.graalvm.nativeimage)
 
     // operations integrations, active only when the application adds these modules
     compileOnly(mn.micronaut.management)
@@ -26,6 +28,7 @@ dependencies {
     testAnnotationProcessor(mn.micronaut.inject.java)
     testAnnotationProcessor(projects.micronautCamelProcessor)
     testImplementation(mnTest.micronaut.test.junit5)
+    testImplementation(mn.graalvm.nativeimage)
     testImplementation(libs.camel.bean)
     testImplementation(libs.camel.direct)
     testImplementation(libs.camel.endpointdsl)

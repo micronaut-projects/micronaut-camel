@@ -25,6 +25,7 @@ include 'camel-processor'
 include 'camel-test'
 
 include 'test-suite'
+include 'test-suite-graal'
 include 'test-suite-groovy'
 include 'test-suite-kotlin'
 
