@@ -1,0 +1,48 @@
+plugins {
+    id 'io.micronaut.build.internal.camel-module'
+    id 'jvm-test-suite'
+}
+
+dependencies {
+    annotationProcessor(mn.micronaut.inject.java)
+
+    api(projects.micronautCamelCore)
+    api(mn.micronaut.http.server)
+    api(libs.camel.platform.http)
+
+    testAnnotationProcessor(mn.micronaut.inject.java)
+    testImplementation(mnTest.micronaut.test.junit5)
+    testImplementation(mn.micronaut.http.client)
+    testImplementation(mn.micronaut.http.server.netty)
+    testImplementation(mn.micronaut.jackson.databind)
+    testImplementation(libs.camel.direct)
+    testImplementation(libs.camel.jackson)
+    testImplementation(libs.camel.rest)
+    testRuntimeOnly(mnTest.junit.jupiter.engine)
+    testRuntimeOnly(mnTest.junit.platform.launcher)
+    testRuntimeOnly(mnLogging.logback.classic)
+}
+
+testing {
+    suites {
+        // the same engine on a servlet container instead of Netty
+        jettyTest(JvmTestSuite) {
+            useJUnitJupiter()
+            dependencies {
+                annotationProcessor(mn.micronaut.inject.java)
+                implementation(project())
+                implementation(mnTest.micronaut.test.junit5)
+                implementation(mn.micronaut.http.client)
+                implementation(mn.micronaut.jackson.databind)
+                implementation(mnServlet.micronaut.http.server.jetty)
+                implementation(libs.camel.jackson)
+                implementation(libs.camel.rest)
+                runtimeOnly(mnLogging.logback.classic)
+            }
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn(testing.suites.jettyTest)
+}
