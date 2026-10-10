@@ -1,0 +1,14 @@
+# Ports master/src/main/resources/application.properties and application-file.properties
+camel:
+  main:
+    name: SampleClusteredRouteController
+
+# the cluster service of io.micronaut.camel.examples.master.MasterNodeConfiguration, instead of camel.cluster.file.*
+cluster:
+  file:
+    # the test replaces it with a temporary directory
+    root: ${java.io.tmpdir}
+
+node:
+  id: ${random.uuid}
+  namespace: camel-master

@@ -1,0 +1,20 @@
+# Ports resilience4j/client/src/main/resources/application.properties
+camel:
+  main:
+    name: Client
+  # configure resilience4j
+  # when we have more than 5 requests per 10 seconds that 50%+ fails
+  # then open circuit and call fallback immediately
+  resilience4j:
+    minimum-number-of-calls: 5
+    sliding-window-size: 10
+    sliding-window-type: TIME_BASED
+    failure-rate-threshold: 50
+    # stay in open for 20s before switching back to half-open
+    wait-duration-in-open-state: 20000
+
+# service1 and service2 are routes of this application instead of applications on ports 9090 and 7070
+service1:
+  url: http://localhost:${micronaut.server.port}/service1
+service2:
+  url: http://localhost:${micronaut.server.port}/service2

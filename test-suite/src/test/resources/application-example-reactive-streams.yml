@@ -1,0 +1,16 @@
+# Ports reactive-streams/src/main/resources/application.yml
+# All examples are enabled by default.
+# You can turn them on-off here
+examples:
+  basic:
+    camel-to-reactor: true
+    reactor-to-camel: true
+    camel-to-reactor-in-out: true
+    reactor-to-camel-in-out: true
+  client-api:
+    rest: true
+    workflow: true
+    # the directory that the workflow reads, "input" in the example; the test replaces it with a temporary directory
+    input: input
+  others:
+    rest: true

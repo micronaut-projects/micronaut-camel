@@ -89,6 +89,32 @@ dependencies {
     testImplementation(libs.camel.langchain4j.embeddings)
     testImplementation(libs.camel.qdrant)
     testRuntimeOnly(mnSql.postgresql)
+    // the examples of the integration patterns and services
+    testImplementation(libs.camel.arangodb)
+    // the ArangoDB driver brings Jackson's JSON-P module, which Jackson loads, but no JSON-P implementation
+    testRuntimeOnly(mnSerde.eclipse.parsson)
+    testImplementation(libs.camel.docling)
+    testImplementation(libs.camel.hl7)
+    testImplementation(libs.hapi.structures.v24)
+    testImplementation(libs.camel.infinispan)
+    testImplementation(mnCache.micronaut.cache.infinispan)
+    testImplementation(libs.camel.jackson)
+    testImplementation(libs.camel.kamelet)
+    testImplementation(libs.camel.lra)
+    testImplementation(libs.camel.master)
+    testImplementation(libs.camel.reactive.streams)
+    testImplementation(mn.reactor)
+    testImplementation(libs.camel.resilience4j)
+    components {
+        // micronaut-cache-infinispan pins jackson-core strictly to an older version than the other modules require
+        withModule('io.micronaut.cache:micronaut-cache-infinispan') {
+            allVariants {
+                withDependencyConstraints {
+                    removeAll { it.group == 'com.fasterxml.jackson.core' }
+                }
+            }
+        }
+    }
     // the services of the examples
     testImplementation(libs.testcontainers.core)
     testImplementation(libs.testcontainers.qdrant)
