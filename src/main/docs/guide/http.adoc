@@ -50,7 +50,51 @@ snippet::io.micronaut.camel.docs.http.BookRoutes[tags="routes", indent=0, title=
 <3> A `GET` to `/books/{isbn}` returns a `Book`. The `isbn` path parameter is a header.
 <4> The response status is `201 Created`.
 
-The REST configuration is set with `restConfiguration()` in a route builder, or with the `camel.rest.*` options, for example `camel.rest.context-path` to serve every REST service below a path. Camel's https://camel.apache.org/components/next/rest-openapi-component.html[rest-openapi] component, which serves the operations of an OpenAPI contract, and the `apiContextPath` of the REST configuration, which serves the OpenAPI document of the REST services with `camel-openapi-java`, also use the `platform-http` component.
+The REST configuration is set with `restConfiguration()` in a route builder, or with the `camel.rest.*` options, for example `camel.rest.context-path` to serve every REST service below a path. Camel's https://camel.apache.org/components/next/rest-openapi-component.html[rest-openapi] component, which serves the operations of an OpenAPI contract, and the `apiContextPath` of the REST configuration, described below, also use the `platform-http` component.
+
+=== OpenAPI and Swagger UI
+
+With `camel-openapi-java`, Camel serves the OpenAPI document of the REST services at the `apiContextPath` of the REST configuration, below its context path, through the Micronaut server:
+
+dependency:org.apache.camel:camel-openapi-java[]
+
+[source,java]
+----
+restConfiguration()
+    .contextPath("/api")
+    .apiContextPath("/api-doc")              // <1>
+    .apiProperty("api.title", "Pet API")
+    .apiProperty("api.version", "1.0.0");
+----
+<1> The document is served at `/api/api-doc`.
+
+https://micronaut-projects.github.io/micronaut-openapi/latest/guide/[Micronaut OpenAPI] generates the OpenAPI document of the controllers at compile time, and the Swagger UI, Redoc, RapiDoc or Scalar views. The views can show Camel's document instead, with the `spec.url` option of the view. Add the annotation processor of Micronaut OpenAPI, and its annotations, which an `@OpenAPIDefinition` on a class of the application needs:
+
+dependency:io.micronaut.openapi:micronaut-openapi[scope="annotationProcessor"]
+
+dependency:io.micronaut.openapi:micronaut-openapi-annotations[scope="compileOnly"]
+
+Then enable the Swagger UI with its document URL, the path of Camel's document, in `openapi.properties` at the root of the project, or with the `micronaut.openapi.views.spec` annotation processor option:
+
+[source,properties]
+.openapi.properties
+----
+micronaut.openapi.views.spec=swagger-ui.enabled=true,swagger-ui.spec.url=/api/api-doc
+----
+
+and serve the generated view as static resources:
+
+[configuration]
+----
+micronaut:
+  router:
+    static-resources:
+      swagger-ui:
+        paths: classpath:META-INF/swagger/views/swagger-ui
+        mapping: /swagger-ui/**
+----
+
+The Swagger UI, at `/swagger-ui/index.html`, then shows the REST services of the Camel routes. The URL is relative to the context path of the server, `micronaut.server.context-path`, which the view adds.
 
 === Micronaut routes and filters
 

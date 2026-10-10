@@ -33,6 +33,7 @@ import org.apache.camel.main.SimpleMain;
 @Internal
 final class MicronautCamelMain extends SimpleMain {
 
+    private final MicronautRoutesCollector routesCollector = new MicronautRoutesCollector();
     private volatile boolean routesEnabled;
 
     /**
@@ -42,7 +43,7 @@ final class MicronautCamelMain extends SimpleMain {
         super(camelContext);
         // the Micronaut environment is the only source of properties
         setPropertyPlaceholderLocations("false");
-        setRoutesCollector(new MicronautRoutesCollector());
+        setRoutesCollector(routesCollector);
     }
 
     /**
@@ -74,6 +75,14 @@ final class MicronautCamelMain extends SimpleMain {
         } finally {
             camelContext.shutdown();
         }
+    }
+
+    @Override
+    protected void modelineRoutes(CamelContext camelContext) throws Exception {
+        // Camel reads the route resources here first, and would only report that no loader supports XML
+        routesCollector.rejectXmlRoutes(camelContext, mainConfigurationProperties.getRoutesExcludePattern(),
+            mainConfigurationProperties.getRoutesIncludePattern());
+        super.modelineRoutes(camelContext);
     }
 
     @Override

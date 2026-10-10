@@ -26,9 +26,12 @@ import jakarta.inject.Singleton;
 import org.apache.camel.CamelContext;
 import org.apache.camel.support.PluginHelper;
 
+import java.lang.reflect.Method;
+
 /**
  * Applies Camel's bean post-processor to a test instance marked with {@link CamelPostProcess}, as
- * Groovy tests are: Micronaut Test injects test instances without creating them as beans.
+ * Groovy tests are: Micronaut Test injects test instances without creating them as beans. Also records the
+ * running test method for {@link EnableRouteCoverage}.
  *
  * @author Graeme Rocher
  * @since 1.0.0
@@ -52,6 +55,11 @@ final class CamelTestInstancePostProcessor implements TestExecutionListener {
 
     @Override
     public void beforeTestExecution(TestContext testContext) throws Exception {
+        if (testContext.getTestMethod() instanceof Method method) {
+            // names the route coverage file of @EnableRouteCoverage: Spock feature methods have generated names
+            String name = method.getName().contains("$") && testContext.getTestName() != null ? testContext.getTestName() : method.getName();
+            beanContext.findBean(CamelTestAnnotations.class).ifPresent(annotations -> annotations.testMethodStarted(name));
+        }
         Object testInstance = testContext.getTestInstance();
         // the marker is in the annotation metadata of the test class, not in its bytecode
         if (testInstance != null && beanContext.findBeanDefinition(testInstance.getClass())

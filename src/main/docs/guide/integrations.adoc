@@ -253,11 +253,85 @@ snippet::io.micronaut.camel.docs.integrations.WeatherTools[tags="routes", indent
 
 The tools of stopped routes are removed from the server. The synchronous and reactive servers of the HTTP and STDIO transports are supported.
 
-=== Cloud and AI clients
+=== Clients from Micronaut modules
 
-Camel autowires the clients that Micronaut modules create into its components, so they are configured once, with Micronaut configuration:
+Camel autowires the options of components and data formats that are marked as autowired from the beans of the application context, when exactly one bean of the option's type exists (or one is `@Primary`). The clients that Micronaut modules create are such beans, so they are configured once, with Micronaut configuration, and the routes use them without integration code:
 
-* the `S3Client` of https://micronaut-projects.github.io/micronaut-aws/latest/guide/[Micronaut AWS] (`micronaut-aws-sdk-v2`, configured with `aws.*`) is the client of the `aws2-s3` component
-* the `BlobServiceClient` that Micronaut Object Storage for Azure creates from `micronaut.object-storage.azure.<name>.*`, with the credentials of Micronaut Azure (`azure.credential.*`), is the client of the `azure-storage-blob` component
-* the `ChatModel` and `EmbeddingModel` beans of https://micronaut-projects.github.io/micronaut-langchain4j/latest/guide/[Micronaut LangChain4j] are the models of the `langchain4j-chat`, `langchain4j-embeddings` and `langchain4j-embeddingstore` components
-* the `DataSource` beans of Micronaut SQL are the data sources of the `jdbc` and `sql` components
+[cols="1,2,2"]
+|===
+|Camel component or data format |Option |Bean, and the Micronaut module that creates it
+
+|`sql`, `sql-stored`
+|`dataSource`
+|The `DataSource` of Micronaut SQL (`datasources.*`)
+
+|`jdbc`
+|The data source named by the endpoint, as in `jdbc:default`
+|The `DataSource` of Micronaut SQL of that name (`datasources.default.*`)
+
+|`jpa`
+|`entityManagerFactory`
+|The `EntityManagerFactory` of Micronaut SQL's `micronaut-hibernate-jpa` (`jpa.*`), see <<transactions, Transactions and Databases>>
+
+|`aws2-s3`
+|`amazonS3Client`
+|The `S3Client` of https://micronaut-projects.github.io/micronaut-aws/latest/guide/[Micronaut AWS] (`micronaut-aws-sdk-v2`, `aws.*`)
+
+|`azure-storage-blob`
+|`serviceClient`
+|The `BlobServiceClient` that Micronaut Object Storage for Azure creates from `micronaut.object-storage.azure.<name>.*`, with the credentials of Micronaut Azure (`azure.credential.*`)
+
+|`langchain4j-chat`, `langchain4j-embeddings`, `langchain4j-embeddingstore`
+|`chatModel`, `embeddingModel`
+|The `ChatModel` and `EmbeddingModel` beans of https://micronaut-projects.github.io/micronaut-langchain4j/latest/guide/[Micronaut LangChain4j]
+
+|`pulsar`
+|`pulsarClient`
+|The `PulsarClient` of Micronaut Pulsar (`pulsar.*`), see <<messaging, Messaging>>
+
+|`infinispan`
+|`cacheContainer`
+|The `RemoteCacheManager` of Micronaut Cache for Infinispan (`infinispan.client.hotrod.*`)
+
+|`mongodb`
+|`mongoConnection`
+|The `MongoClient` of https://micronaut-projects.github.io/micronaut-mongodb/latest/guide/[Micronaut MongoDB] (`micronaut-mongo-sync`, `mongodb.*`). The client connects lazily.
+
+|`opensearch`
+|`client`, `openSearchClient`
+|The `RestClient` and `OpenSearchClient` of https://micronaut-projects.github.io/micronaut-opensearch/latest/guide/[Micronaut OpenSearch] (`micronaut-opensearch-restclient`, `micronaut.opensearch.rest-client.*`). They are prototype beans, so the component gets clients of its own, configured as those of the application.
+
+|`jackson` of `camel-jackson3`
+|`objectMapper`, with `camel.dataformat.jackson.auto-discover-object-mapper: true`
+|The Jackson 3 `JsonMapper` of `micronaut-jackson-databind` (`jackson.*`)
+|===
+
+The data formats of camel-jackson and camel-jackson3 look up the object mapper of the registry only when their `autoDiscoverObjectMapper` option is `true`; otherwise they create their own. Micronaut 5 uses Jackson 3, so the mapper of `micronaut-jackson-databind` is that of camel-jackson3; camel-jackson, on Jackson 2, uses a Jackson 2 `ObjectMapper` bean only if the application defines one. Camel does not apply its Jackson options, such as `camel.dataformat.jackson.include`, to an object mapper found in the registry: configure the Micronaut mapper with `jackson.*` instead. The JSON of routes can also use the Micronaut `JsonMapper` directly, with the `micronaut-json` data format described above.
+
+Hazelcast, Ehcache, Google Cloud, Kafka, JMS, RabbitMQ, NATS, MQTT and Redis need more than autowiring, so Micronaut Camel configures their components, as described in this section and in <<messaging, Messaging>>. An option set with `camel.component.<name>.*` takes precedence, and `camel.component.<name>.autowired-enabled: false` turns autowiring off for a component.
+
+=== Thread pools on Micronaut executors
+
+Camel creates thread pools for the `threads` EIP, the concurrent consumers of `seda`, the parallel processing of EIPs such as `split` and `multicast`, and some components. By default these are Camel's own thread pools. With `micronaut.camel.executors.enabled`, they run their tasks on the executors of Micronaut instead, so Camel shares the threads of the application, and runs on virtual threads with the `blocking` executor, which is virtual on JDK 21 and later:
+
+[configuration]
+----
+micronaut:
+  camel:
+    executors:
+      enabled: true
+      default-executor: blocking # <1>
+      profiles:
+        bulk: io # <2>
+        ordered: camel # <3>
+  executors:
+    io:
+      type: cached
+----
+<1> The Micronaut executor of the thread pools, `blocking` by default. Any executor works: `virtual`, `io`, or one configured with `micronaut.executors.<name>.*`.
+<2> The thread pools of the Camel thread pool profile `bulk` run on the `io` executor.
+<3> The thread pools of the profile `ordered` stay Camel's.
+
+A Camel thread pool keeps the limits of its thread pool profile on the shared executor: at most `maxPoolSize` of its tasks run at a time, the others wait in a queue of `maxQueueSize` tasks, in order (so a pool of one thread runs its tasks one after the other), and the rejected policy of the profile applies when the queue is full. Camel shuts a thread pool down when its route stops, which never shuts the Micronaut executor down. Thread pool profiles are `ThreadPoolProfile` beans, which camel-main registers, and EIPs use them by id, as in `threads().executorService("bulk")`. The thread names are those of the Micronaut executor. Scheduled thread pools, such as those of timers and polling consumers, stay Camel's: polling consumers can run on the Micronaut scheduler with `scheduler=micronaut`, as described above.
+
+Camel also runs its own thread pools on virtual threads with `camel.main.virtual-threads-enabled: true`. That option sets the `camel.threads.virtual.enabled` system property, so it applies to every Camel context of the JVM, and only to Camel's thread pools: with `micronaut.camel.executors.enabled`, it applies to the scheduled thread pools and to the profiles mapped to `camel`.

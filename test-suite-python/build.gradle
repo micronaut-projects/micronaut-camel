@@ -15,6 +15,7 @@ dependencies {
     testImplementation(libs.camel.bean)
     testImplementation(libs.camel.direct)
     testImplementation(libs.camel.log)
+    testImplementation(libs.camel.management)
     testImplementation(libs.camel.mock)
     testImplementation(libs.camel.seda)
     testImplementation(mnTest.micronaut.test.junit5)

@@ -140,7 +140,7 @@ testing {
             }
         }
         // the bridges to Micronaut modules whose clients are heavy or start servers: Hazelcast, Ehcache,
-        // Google Cloud and Pulsar
+        // Google Cloud and Pulsar, and the clients Camel autowires: MongoDB, OpenSearch and Jackson
         ecosystemTest(JvmTestSuite) {
             useJUnitJupiter()
             dependencies {
@@ -152,7 +152,14 @@ testing {
                 implementation(libs.camel.google.bigquery)
                 implementation(libs.camel.google.pubsub)
                 implementation(libs.camel.hazelcast)
+                implementation(libs.camel.jackson)
+                implementation(libs.camel.jackson3)
+                implementation(libs.camel.mongodb)
+                implementation(libs.camel.opensearch)
                 implementation(libs.camel.pulsar)
+                implementation(mn.micronaut.jackson.databind)
+                implementation(mnMongo.micronaut.mongo.sync)
+                implementation(mnOpensearch.micronaut.opensearch.restclient)
                 implementation(mnCache.micronaut.cache.ehcache)
                 implementation(mnCache.micronaut.cache.hazelcast)
                 implementation(mnGcp.micronaut.gcp.common)

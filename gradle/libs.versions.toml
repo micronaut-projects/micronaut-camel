@@ -44,6 +44,9 @@ micronaut-aws = "5.1.1"
 micronaut-azure = "6.2.0"
 micronaut-gcp = "6.2.0"
 micronaut-pulsar = "3.2.0"
+micronaut-mongodb = "6.2.0"
+micronaut-opensearch = "2.1.1"
+micronaut-openapi = "7.3.0"
 groovy = "4.0.24"
 spock = "2.3-groovy-4.0"
 hapi-hl7v2 = "2.6.0"
@@ -77,6 +80,9 @@ micronaut-azure = { module = "io.micronaut.azure:micronaut-azure-bom", version.r
 micronaut-sql = { module = "io.micronaut.sql:micronaut-sql-bom", version.ref = "micronaut-sql" }
 micronaut-gcp = { module = "io.micronaut.gcp:micronaut-gcp-bom", version.ref = "micronaut-gcp" }
 micronaut-pulsar = { module = "io.micronaut.pulsar:micronaut-pulsar-bom", version.ref = "micronaut-pulsar" }
+micronaut-mongodb = { module = "io.micronaut.mongodb:micronaut-mongo-bom", version.ref = "micronaut-mongodb" }
+micronaut-opensearch = { module = "io.micronaut.opensearch:micronaut-opensearch-bom", version.ref = "micronaut-opensearch" }
+micronaut-openapi = { module = "io.micronaut.openapi:micronaut-openapi-bom", version.ref = "micronaut-openapi" }
 
 #
 # Managed dependencies appear in the BOM
@@ -139,6 +145,8 @@ camel-file = { module = "org.apache.camel:camel-file" }
 camel-groovy = { module = "org.apache.camel:camel-groovy" }
 camel-http = { module = "org.apache.camel:camel-http" }
 camel-jackson = { module = "org.apache.camel:camel-jackson" }
+camel-mongodb = { module = "org.apache.camel:camel-mongodb" }
+camel-opensearch = { module = "org.apache.camel:camel-opensearch" }
 camel-health = { module = "org.apache.camel:camel-health" }
 camel-jackson3 = { module = "org.apache.camel:camel-jackson3" }
 camel-jms = { module = "org.apache.camel:camel-jms" }
@@ -147,6 +155,7 @@ camel-kafka = { module = "org.apache.camel:camel-kafka" }
 camel-leveldb = { module = "org.apache.camel:camel-leveldb" }
 camel-log = { module = "org.apache.camel:camel-log" }
 camel-management = { module = "org.apache.camel:camel-management" }
+camel-management-api = { module = "org.apache.camel:camel-management-api" }
 camel-micrometer = { module = "org.apache.camel:camel-micrometer" }
 camel-mock = { module = "org.apache.camel:camel-mock" }
 camel-openapi-java = { module = "org.apache.camel:camel-openapi-java" }

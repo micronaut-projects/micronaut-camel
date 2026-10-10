@@ -63,4 +63,7 @@ micronautBuild {
     importMicronautCatalog("micronaut-sql")
     importMicronautCatalog("micronaut-gcp")
     importMicronautCatalog("micronaut-pulsar")
+    importMicronautCatalog("micronaut-mongodb")
+    importMicronautCatalog("micronaut-opensearch")
+    importMicronautCatalog("micronaut-openapi")
 }
