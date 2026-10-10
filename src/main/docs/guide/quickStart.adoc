@@ -1,3 +1,20 @@
-Add the Micronaut Camel dependency to your build:
+Add the Micronaut Camel dependency to your build, together with the Camel components your routes use. The versions of the Camel artifacts come from the Micronaut Camel BOM:
 
 dependency:io.micronaut.camel:micronaut-camel-core[]
+
+dependency:org.apache.camel:camel-direct[]
+
+dependency:org.apache.camel:camel-log[]
+
+Write a route by extending `RouteBuilder` and making it a bean:
+
+snippet::io.micronaut.camel.docs.quickstart.GreetingRoutes[tags="routes", indent=0, title="A route"]
+
+<1> A `RouteBuilder` bean is added to Camel when the application starts.
+<2> The route consumes from the `direct:greet` endpoint, builds a greeting and logs it.
+
+Camel starts when the application starts and stops when it stops. The Camel templates are beans, so a test, or any other bean, can send messages to the route:
+
+snippet::io.micronaut.camel.docs.quickstart.GreetingRoutesTest[tags="test", indent=0, title="Calling the route"]
+
+<1> Inject a `ProducerTemplate` to send messages to Camel endpoints.

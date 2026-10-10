@@ -21,6 +21,10 @@ include 'camel-bom'
 include 'camel-core'
 include 'camel-test'
 
+include 'test-suite'
+include 'test-suite-groovy'
+include 'test-suite-kotlin'
+
 enableFeaturePreview 'TYPESAFE_PROJECT_ACCESSORS'
 
 micronautBuild {

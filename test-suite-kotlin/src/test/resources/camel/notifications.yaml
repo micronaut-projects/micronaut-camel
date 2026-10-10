@@ -1,0 +1,13 @@
+# tag::routes[]
+- route:
+    id: notify
+    from:
+      uri: direct:notify
+      steps:
+        - setBody:
+            expression:
+              simple:
+                expression: "notified ${body}"
+        - to:
+            uri: log:notifications
+# end::routes[]

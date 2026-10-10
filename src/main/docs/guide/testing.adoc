@@ -1,0 +1,33 @@
+Routes are tested with `@MicronautTest`: the test starts the application context, and so Camel. The Camel templates and Camel's `MockEndpoint` and `NotifyBuilder` work as usual.
+
+The `micronaut-camel-test` dependency adds the annotations of Camel's Spring Boot test support to `@MicronautTest` tests:
+
+dependency:io.micronaut.camel:micronaut-camel-test[scope="testImplementation"]
+
+snippet::io.micronaut.camel.docs.testing.MockGreetingsTest[tags="test", indent=0, title="Mocking endpoints"]
+
+<1> Messages sent to the endpoints matching `log:*` are also sent to a mock endpoint.
+<2> The mock endpoint of `log:greetings` is `mock:log:greetings`.
+
+[cols="1,2"]
+|===
+|Annotation |Effect
+
+|`@MockEndpoints`
+|Messages sent to the matching endpoints are also sent to `mock:<endpoint uri>`
+
+|`@MockEndpointsAndSkip`
+|Messages sent to the matching endpoints are only sent to `mock:<endpoint uri>`
+
+|`@ExcludeRoutes`
+|The given route builder classes are not added
+
+|`@AutoStartupExclude`
+|The matching routes are not started
+
+|`@UseAdviceWith`
+|Camel is not started, so the test can change routes with `AdviceWith` and then call `camelContext.start()`
+
+|`@ShutdownTimeout`
+|How long Camel waits for in-flight messages when the test stops. Tests use 10 seconds by default.
+|===
