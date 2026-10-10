@@ -6,6 +6,8 @@ routes:
   title: Routes
 configuration:
   title: Configuration
+modules:
+  title: Camel Modules
 beans:
   title: Beans and the Camel Registry
 annotations:

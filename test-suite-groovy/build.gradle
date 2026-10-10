@@ -7,7 +7,7 @@ dependencies {
     testCompileOnly(mn.micronaut.inject.groovy)
     testCompileOnly(projects.micronautCamelProcessor)
     testImplementation(projects.micronautCamelCore)
-    testImplementation(projects.micronautCamelHttp)
+    testImplementation(projects.micronautCamelPlatformHttp)
     testImplementation(projects.micronautCamelTest)
     testImplementation(mnData.micronaut.data.spring.jdbc)
     testImplementation(mnData.micronaut.data.tx)

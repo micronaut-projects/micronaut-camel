@@ -1,0 +1,13 @@
+Micronaut Camel has a module for each Camel artifact that provides components, data formats or languages, named after that artifact: `micronaut-camel-kafka` for `camel-kafka`, `micronaut-camel-jackson` for `camel-jackson`. A module depends on `micronaut-camel-core` and on the Camel artifact, so it is the only dependency an application needs to use the artifact:
+
+dependency:io.micronaut.camel:micronaut-camel-kafka[]
+
+A module also holds the `@ConfigurationProperties` of the components, data formats and languages of its artifact, generated from the Camel catalog. IDEs complete their options, such as `camel.component.kafka.brokers`, and the options appear in the configuration reference. Camel applies the options itself, so the classes only document them: a configuration bean is only active when one of its options is set.
+
+The modules are optional. Adding the Camel artifact, `org.apache.camel:camel-kafka`, instead works the same way, without the IDE support. The versions of the Camel artifacts come from the Micronaut Camel BOM in both cases.
+
+NOTE: The modules are created from the Camel catalog when the project builds, so there is one for each artifact of the Camel version of the release. The Camel extensions that need Spring Boot (`camel-spring-batch`, `camel-spring-ws` and `camel-spring-ai-*`) have no module. The module of `camel-platform-http`, `micronaut-camel-platform-http`, also serves the `platform-http` component on the Micronaut HTTP server, as described in <<http, HTTP and REST>>.
+
+=== Module reference
+
+include::{includedir}camelExtensions.adoc[]

@@ -91,22 +91,30 @@ public final class CamelConfigVisitor implements TypeElementVisitor<Object, Obje
         String[] include = config.stringValues("include");
         Predicate<String> included = (include.length == 0 ? (Predicate<String>) name -> true : matching(include))
             .and(matching(config.stringValues("exclude")).negate());
+        Set<String> artifacts = Set.of(config.stringValues("artifacts"));
         CamelCatalog camelCatalog = catalog();
 
         List<ObjectDef> generated = new ArrayList<>();
         for (String kindName : config.stringValues("requirements")) {
             CamelKind kind = CamelKind.valueOf(kindName);
             for (String name : kind.names(camelCatalog)) {
-                if (included.test(name)) {
-                    generated.add(RequirementGenerator.requirement(packageName, kind, kind.model(camelCatalog, name)));
+                if (!included.test(name)) {
+                    continue;
+                }
+                ArtifactModel<?> model = kind.model(camelCatalog, name);
+                if (fromArtifacts(model, artifacts)) {
+                    generated.add(RequirementGenerator.requirement(packageName, kind, model));
                 }
             }
         }
         for (String kindName : config.stringValues("configurations")) {
             CamelKind kind = CamelKind.valueOf(kindName);
             for (String name : kind.names(camelCatalog)) {
-                if (included.test(name)) {
-                    ArtifactModel<?> model = kind.model(camelCatalog, name);
+                if (!included.test(name)) {
+                    continue;
+                }
+                ArtifactModel<?> model = kind.model(camelCatalog, name);
+                if (fromArtifacts(model, artifacts)) {
                     generated.add(ConfigurationGenerator.extensionConfiguration(packageName, kind, model, context));
                 }
             }
@@ -128,6 +136,10 @@ public final class CamelConfigVisitor implements TypeElementVisitor<Object, Obje
                 throw new ProcessingException(element, "Failed to generate " + objectDef.getName() + ": " + e.getMessage(), e);
             }
         }
+    }
+
+    private static boolean fromArtifacts(ArtifactModel<?> model, Set<String> artifacts) {
+        return artifacts.isEmpty() || artifacts.contains(model.getArtifactId());
     }
 
     /**

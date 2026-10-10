@@ -1,0 +1,9 @@
+plugins {
+    id 'groovy-gradle-plugin'
+}
+
+dependencies {
+    // the Camel catalog lists the extensions to create a module for, at the version of the build
+    implementation(platform(libs.boms.camel))
+    implementation(libs.camel.catalog)
+}

@@ -8,7 +8,7 @@ dependencies {
     testAnnotationProcessor(projects.micronautCamelProcessor)
     testAnnotationProcessor(mnValidation.micronaut.validation.processor)
     testImplementation(projects.micronautCamelCore)
-    testImplementation(projects.micronautCamelHttp)
+    testImplementation(projects.micronautCamelPlatformHttp)
     testImplementation(projects.micronautCamelTest)
     testImplementation(libs.camel.amqp)
     testImplementation(libs.camel.avro)
