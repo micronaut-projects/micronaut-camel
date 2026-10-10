@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     testAnnotationProcessor(mn.micronaut.inject.java)
+    testAnnotationProcessor(projects.micronautCamelProcessor)
     testImplementation(projects.micronautCamelCore)
     testImplementation(projects.micronautCamelTest)
     testImplementation(libs.camel.bean)

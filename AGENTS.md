@@ -5,7 +5,9 @@ Micronaut Camel integrates Apache Camel 4 with Micronaut 5. It was created from 
 ## Repository Shape
 
 - `camel-core/` is the runtime integration, published as `micronaut-camel-core` (`useStandardizedProjectNames`).
-- `camel-processor/` (`micronaut-camel-processor`) generates code from the Camel catalog for classes annotated with `@CamelConfig`: the `@RequiresCamel*` annotations and the camel-main `@ConfigurationProperties` of `camel-core`, and the component, data format and language `@ConfigurationProperties` of `camel-components/`. Camel applies the options at runtime through camel-main; the generated classes document them.
+- `camel-processor/` (`micronaut-camel-processor`) is the annotation processor:
+  - `CamelConfigVisitor` generates code from the Camel catalog for classes annotated with `@CamelConfig`: the `@RequiresCamel*` annotations and the camel-main `@ConfigurationProperties` of `camel-core`, and the component, data format and language `@ConfigurationProperties` of `camel-components/`. Camel applies the options at runtime through camel-main; the generated classes document them.
+  - `CamelAnnotationsVisitor` handles Camel's bean annotations at compile time: `@EndpointInject`/`@Produce` become `@CamelInject`-qualified injection points served by a generated factory per class, `@Consume` methods become executable, and `@Converter` classes get a generated loader. Groovy cannot add generated sources, so there the classes are marked for Camel's runtime bean post-processor instead.
 - `camel-test/` (`micronaut-camel-test`) adds Camel test annotations, such as `@MockEndpoints` and `@UseAdviceWith`, to `@MicronautTest` tests.
 - `camel-bom/` is the BOM. It imports `org.apache.camel:camel-bom`.
 - `buildSrc/src/main/groovy/io.micronaut.build.internal.camel-*.gradle` holds the convention plugins: `camel-base`, `camel-module` for published modules, and `camel-tests` for the test suites.

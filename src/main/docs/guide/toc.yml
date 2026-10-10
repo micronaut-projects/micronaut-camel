@@ -8,6 +8,8 @@ configuration:
   title: Configuration
 beans:
   title: Beans and the Camel Registry
+annotations:
+  title: Camel Annotations
 lifecycle:
   title: Lifecycle
 testing:

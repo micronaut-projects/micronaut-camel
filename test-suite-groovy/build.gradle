@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     testCompileOnly(mn.micronaut.inject.groovy)
+    testCompileOnly(projects.micronautCamelProcessor)
     testImplementation(projects.micronautCamelCore)
     testImplementation(projects.micronautCamelTest)
     testImplementation(libs.camel.bean)
