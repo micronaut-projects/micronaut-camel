@@ -12,7 +12,7 @@ The routes are served by any Micronaut HTTP server, including the servlet contai
 
 A route consumes the requests to a path with a `platform-http:` endpoint:
 
-snippet::io.micronaut.camel.docs.http.HelloRoutes[tags="routes", indent=0, title="A platform-http route"]
+snippet::io.micronaut.camel.docs.http.HelloRoutes[tags="routes", indent=0, title="A platform-http route", languages="java,kotlin,groovy"]
 
 <1> The route serves `GET` requests to `/hello/{name}`. Without `httpMethodRestrict`, it serves every method.
 <2> The `{name}` path parameter is a message header.
@@ -41,9 +41,9 @@ dependency:org.apache.camel:camel-rest[]
 
 dependency:org.apache.camel:camel-jackson[]
 
-snippet::io.micronaut.camel.docs.http.Book[tags="book", indent=0, title="A type exchanged as JSON"]
+snippet::io.micronaut.camel.docs.http.Book[tags="book", indent=0, title="A type exchanged as JSON", languages="java,kotlin,groovy"]
 
-snippet::io.micronaut.camel.docs.http.BookRoutes[tags="routes", indent=0, title="REST services"]
+snippet::io.micronaut.camel.docs.http.BookRoutes[tags="routes", indent=0, title="REST services", languages="java,kotlin,groovy"]
 
 <1> Bodies are bound to and from JSON.
 <2> A `POST` to `/books` receives a `Book`.
@@ -58,7 +58,7 @@ Camel routes and Micronaut routes share the server. A request goes to a Camel ro
 
 The requests to Camel routes go through the Micronaut server filters, so filters, such as those of Micronaut Security, apply to Camel routes as they apply to controllers:
 
-snippet::io.micronaut.camel.docs.http.ApiKeyFilter[tags="filter", indent=0, title="A filter in front of REST services"]
+snippet::io.micronaut.camel.docs.http.ApiKeyFilter[tags="filter", indent=0, title="A filter in front of REST services", languages="java,kotlin,groovy"]
 
 <1> The filter applies to the paths of the REST services.
 <2> A request without the API key is rejected before it reaches Camel.
