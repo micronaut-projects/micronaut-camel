@@ -19,11 +19,11 @@ Camel logs a summary of the options it applied when the application starts.
 
 === IDE support and the configuration reference
 
-The `micronaut-camel-core` module documents the `camel.main.*` options and Camel's other configuration groups as `@ConfigurationProperties`, so IDEs complete them and they appear in the configuration reference. The `micronaut-camel-components` module does the same for the options of every Camel component, data format and language:
+The `micronaut-camel-components` module documents the `camel.main.*` options, Camel's other configuration groups, and the options of every Camel component, data format and language as `@ConfigurationProperties`, so IDEs complete them and they appear in the configuration reference:
 
 dependency:io.micronaut.camel:micronaut-camel-components[]
 
-Both are generated from the Camel catalog at build time. Camel itself still applies the options, so `micronaut-camel-components` is optional: the options work without it. It adds a configuration bean per component, data format and language, each only active when one of its options is set.
+The classes are generated from the Camel catalog at build time. Camel itself still applies the options, so `micronaut-camel-components` is optional: the options work without it. It adds a configuration bean per component, data format and language, each only active when one of its options is set.
 
 === Requiring a Camel component
 

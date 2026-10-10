@@ -1,0 +1,29 @@
+# Ports health-checks/src/main/resources/application.properties
+endpoints:
+  health:
+    # show verbose health details (/health) so you can see Camel information also
+    details-visible: ANONYMOUS
+
+camel:
+  main:
+    name: MyCamel
+    # enable JMX which allows to also control health check
+    jmx-enabled: true
+
+  # enable supervised route controller which will startup routes in safe manner
+  routecontroller:
+    enabled: true
+    # attempt up till 10 times to start a route (and exhaust if still failing)
+    # when a route is exhausted then its taken out as being supervised and
+    # will not take part of health-check either (UNKNOWN state)
+    back-off-max-attempts: 10
+
+  # enable health check (is automatic enabled if discovered on classpath)
+  # global flag to enable/disable
+  health:
+    enabled: true
+    # level of details exposed by camel-health check (full, default, or oneline)
+    exposure-level: default
+
+# properties used in the route
+myPeriod: 10s

@@ -133,7 +133,8 @@ class CamelBootstrapTest {
 
     @Test
     void applicationsWithoutAServerAreKeptAlive() {
-        try (ApplicationContext context = run(Map.of())) {
+        // the HTTP server is on the test classpath for the management tests
+        try (ApplicationContext context = run(Map.of("micronaut.server.netty.enabled", false))) {
             EmbeddedApplication<?> application = context.getBean(EmbeddedApplication.class);
 
             assertInstanceOf(CamelApplication.class, application);
