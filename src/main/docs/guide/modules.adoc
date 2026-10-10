@@ -6,7 +6,7 @@ A module also holds the `@ConfigurationProperties` of the components, data forma
 
 The modules are optional. Adding the Camel artifact, `org.apache.camel:camel-kafka`, instead works the same way, without the IDE support. The versions of the Camel artifacts come from the Micronaut Camel BOM in both cases.
 
-NOTE: The modules are created from the Camel catalog when the project builds, so there is one for each artifact of the Camel version of the release. The Camel extensions that need Spring Boot (`camel-spring-batch`, `camel-spring-ws` and `camel-spring-ai-*`) have no module. The module of `camel-platform-http`, `micronaut-camel-platform-http`, also serves the `platform-http` component on the Micronaut HTTP server, as described in <<http, HTTP and REST>>.
+NOTE: The modules are created from the Camel catalog when the project builds, so there is one for each artifact of the Camel version of the release. The Camel extensions that need Spring Boot (`camel-spring-batch`, `camel-spring-ws` and `camel-spring-ai-*`) have no module. The module of `camel-platform-http`, `micronaut-camel-platform-http`, also serves the `platform-http` component on the Micronaut HTTP server, as described in <<http, HTTP and REST>>, and the module of `camel-servlet`, `micronaut-camel-servlet`, registers Camel's servlet with the servlet containers of Micronaut Servlet.
 
 === Module reference
 

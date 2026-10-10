@@ -26,6 +26,7 @@ include 'camel-configuration'
 include 'camel-core'
 include 'camel-platform-http'
 include 'camel-processor'
+include 'camel-servlet'
 include 'camel-test'
 
 include 'test-suite'
@@ -59,4 +60,6 @@ micronautBuild {
     importMicronautCatalog("micronaut-aws")
     importMicronautCatalog("micronaut-azure")
     importMicronautCatalog("micronaut-sql")
+    importMicronautCatalog("micronaut-gcp")
+    importMicronautCatalog("micronaut-pulsar")
 }

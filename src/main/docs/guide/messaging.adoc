@@ -35,6 +35,11 @@ An integration applies when both the Camel component and the Micronaut module ar
 |Micronaut MQTT
 |`brokerUrl`, `userName` and `password` from `+mqtt.client.*+`
 |`micronaut.camel.mqtt.enabled`
+
+|`pulsar`
+|Micronaut Pulsar
+|`pulsarClient`, the `PulsarClient` of Micronaut Pulsar, which Camel autowires
+|`camel.component.pulsar.autowired-enabled`
 |===
 
 === Kafka
@@ -133,3 +138,15 @@ mqtt:
   client:
     server-uri: tcp://localhost:1883
 ----
+
+=== Pulsar
+
+With `camel-pulsar` and https://micronaut-projects.github.io/micronaut-pulsar/latest/guide/[Micronaut Pulsar], the `pulsar` component uses the `PulsarClient` of Micronaut Pulsar, configured with `+pulsar.*+`: Camel autowires the client from the application context, so no integration code is involved.
+
+[configuration]
+----
+pulsar:
+  service-url: pulsar://localhost:6650
+----
+
+Routes then produce to and consume from topics with the client of the application, such as `pulsar:persistent://public/default/orders`. Camel does not close the client: Micronaut Pulsar owns it. `camel.component.pulsar.pulsar-client`, or the `pulsarClient` option of an endpoint, takes precedence, and `camel.component.pulsar.autowired-enabled: false` stops Camel from autowiring the client.

@@ -1,5 +1,6 @@
 plugins {
     id 'io.micronaut.build.internal.camel-module'
+    id 'jvm-test-suite'
 }
 
 dependencies {
@@ -46,6 +47,12 @@ dependencies {
     compileOnly(mnObjectStorage.micronaut.object.storage.core)
     compileOnly(mnMcp.micronaut.mcp.server.java.sdk)
     compileOnly(libs.camel.mcp.server.api)
+    compileOnly(libs.camel.cli.connector)
+    compileOnly(libs.camel.hazelcast)
+    compileOnly(mnCache.hazelcast)
+    compileOnly(libs.camel.ehcache)
+    compileOnly(mnCache.micronaut.cache.ehcache)
+    compileOnly(mnGcp.micronaut.gcp.common)
 
     testAnnotationProcessor(mn.micronaut.inject.java)
     testAnnotationProcessor(projects.micronautCamelProcessor)
@@ -66,6 +73,7 @@ dependencies {
     testImplementation(libs.camel.timer)
     testImplementation(libs.camel.yaml.dsl)
     testImplementation(libs.camel.file)
+    testImplementation(libs.camel.master)
     testImplementation(mnCache.micronaut.cache.caffeine)
     testImplementation(mnSerde.micronaut.serde.jackson)
     testAnnotationProcessor(mnSerde.micronaut.serde.processor)
@@ -100,6 +108,56 @@ dependencies {
     testImplementation(libs.camel.mcp.server.api)
     testRuntimeOnly(mnTest.junit.jupiter.engine)
     testRuntimeOnly(mnTest.junit.platform.launcher)
-    testRuntimeOnly(mnLogging.logback.classic)
+    // compile scope for the tests that assert what Camel logs
+    testImplementation(mnLogging.logback.classic)
     testRuntimeOnly(mnSql.h2)
+}
+
+testing {
+    suites {
+        // the Camel CLI connector, with its own user home: the connector writes its files to ~/.camel
+        cliTest(JvmTestSuite) {
+            useJUnitJupiter()
+            dependencies {
+                annotationProcessor(mn.micronaut.inject.java)
+                implementation(project())
+                implementation(mnTest.micronaut.test.junit5)
+                implementation(libs.camel.cli.connector)
+                implementation(libs.camel.direct)
+                runtimeOnly(mnLogging.logback.classic)
+            }
+            targets.configureEach {
+                testTask.configure {
+                    def home = layout.buildDirectory.dir('cli-test-home')
+                    doFirst { home.get().asFile.mkdirs() }
+                    systemProperty('user.home', home.get().asFile.absolutePath)
+                }
+            }
+        }
+        // the bridges to Micronaut modules whose clients are heavy or start servers: Hazelcast, Ehcache,
+        // Google Cloud and Pulsar
+        ecosystemTest(JvmTestSuite) {
+            useJUnitJupiter()
+            dependencies {
+                annotationProcessor(mn.micronaut.inject.java)
+                implementation(project())
+                implementation(mnTest.micronaut.test.junit5)
+                implementation(libs.camel.direct)
+                implementation(libs.camel.ehcache)
+                implementation(libs.camel.google.bigquery)
+                implementation(libs.camel.google.pubsub)
+                implementation(libs.camel.hazelcast)
+                implementation(libs.camel.pulsar)
+                implementation(mnCache.micronaut.cache.ehcache)
+                implementation(mnCache.micronaut.cache.hazelcast)
+                implementation(mnGcp.micronaut.gcp.common)
+                implementation(mnPulsar.micronaut.pulsar)
+                runtimeOnly(mnLogging.logback.classic)
+            }
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn(testing.suites.cliTest, testing.suites.ecosystemTest)
 }

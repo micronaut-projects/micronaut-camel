@@ -35,6 +35,69 @@ snippet::io.micronaut.camel.docs.integrations.IntegrationRoutes[tags="routes", i
 <2> The idempotent consumer uses the `imports` repository.
 <3> The body is written as JSON with the Micronaut JSON mapper.
 
+=== Hazelcast
+
+The Camel Hazelcast components (`hazelcast-map`, `hazelcast-queue`, `hazelcast-topic` and the others) start a Hazelcast member of their own unless they are given a `HazelcastInstance`. When the application has https://micronaut-projects.github.io/micronaut-cache/latest/guide/[Micronaut Cache for Hazelcast] and `camel-hazelcast`, the components use the `HazelcastInstance` of Micronaut instead, a member or a client configured with `+hazelcast.*+`, so the routes and the Micronaut caches share the cluster:
+
+dependency:io.micronaut.cache:micronaut-cache-hazelcast[]
+
+dependency:org.apache.camel:camel-hazelcast[]
+
+[source,java]
+----
+from("direct:status")
+    .to("hazelcast-map:orders?operation=put"); // <1>
+----
+<1> Puts the body into the `orders` map of the Micronaut Hazelcast instance, under the `CamelHazelcastObjectId` header.
+
+`camel.component.<name>.hazelcast-instance`, or the `hazelcastInstance` option of an endpoint, takes precedence. The integration is disabled with `micronaut.camel.hazelcast.enabled: false`.
+
+=== Ehcache
+
+When the application has https://micronaut-projects.github.io/micronaut-cache/latest/guide/[Micronaut Cache for Ehcache] and `camel-ehcache`, the `ehcache` component uses the Ehcache `CacheManager` of Micronaut, and the caches configured under `+ehcache.caches.*+` are shared by the routes and the Micronaut cache annotations, such as `@Cacheable`:
+
+dependency:io.micronaut.cache:micronaut-cache-ehcache[]
+
+dependency:org.apache.camel:camel-ehcache[]
+
+[configuration]
+----
+ehcache:
+  caches:
+    orders:
+      key-type: java.lang.String
+      value-type: java.lang.String
+----
+
+[source,java]
+----
+from("direct:cache-order")
+    .setHeader(EhcacheConstants.ACTION, constant(EhcacheConstants.ACTION_PUT))
+    .setHeader(EhcacheConstants.KEY, header("orderId"))
+    .to("ehcache:orders"); // <1>
+----
+<1> Stores the body in the `orders` cache, which a `@Cacheable("orders")` method reads.
+
+The routes use the key and value types of the cache configuration, so the endpoints do not set `keyType` and `valueType`. A cache that is not configured under `+ehcache.caches.*+` is created by Camel, as without Micronaut. The integration does not apply when the component has a cache manager, a cache manager configuration or a configuration URI of its own (`+camel.component.ehcache.*+`), and is disabled with `micronaut.camel.ehcache.enabled: false`.
+
+=== Google Cloud
+
+When the application has Micronaut GCP (`micronaut-gcp-common`), the Camel Google components use the project of the application: the `gcp.project-id` property, or the project that the Google Cloud libraries detect from the environment, such as the project of the Google Cloud service the application runs on.
+
+dependency:io.micronaut.gcp:micronaut-gcp-common[]
+
+* The `projectId` option of the components that have one, `google-bigquery`, `google-bigquery-sql` and `google-firestore`, is set to the project, unless `camel.component.<name>.project-id` is set.
+* The components whose project is part of the endpoint URI, such as `google-pubsub` and `google-vertexai`, have no such option. The `{{gcp.project-id}}` placeholder resolves to the project in their URIs:
+
+[source,java]
+----
+from("google-pubsub:{{gcp.project-id}}:orders-subscription") // <1>
+    .to("direct:order");
+----
+<1> Consumes from the `orders-subscription` subscription of the project of the application.
+
+The integration is disabled with `micronaut.camel.gcp.enabled: false`.
+
 === Secrets and HashiCorp Vault
 
 Micronaut's distributed configuration loads secrets into the environment at startup, from AWS Secrets Manager and Parameter Store, Google Cloud Secret Manager, Azure Key Vault, Oracle Cloud Vault, HashiCorp Vault and Kubernetes. Camel's `{{...}}` placeholders resolve against the environment, so routes can use these secrets without Camel's own vault support.
