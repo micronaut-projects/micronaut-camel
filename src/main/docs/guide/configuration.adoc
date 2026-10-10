@@ -17,6 +17,28 @@ camel:
 
 Camel logs a summary of the options it applied when the application starts.
 
+=== Map options
+
+Some Camel options are maps, such as the thread pool profiles of `camel.threadpool.config`, the REST options of `camel.rest.api-properties` and `camel.rest.cors-headers`, and `camel.main.global-options`. They are set as nested configuration, and the keys are kept as written, dots included:
+
+[configuration]
+----
+camel:
+  threadpool:
+    config:
+      bulk:
+        pool-size: 20
+        max-pool-size: 50
+  rest:
+    api-properties:
+      api.title: Orders
+      api.version: 1.0.0
+    cors-headers:
+      Access-Control-Max-Age: 3600
+----
+
+Camel's own `camel.rest.cors-headers[Access-Control-Max-Age]` syntax also works in property files.
+
 === Several instances of a component
 
 `camel.component.<name>.*` configures the component of that name. To use the same component with two configurations, for example two Kafka clusters, declare a second instance with camel-main's `camel.beans.*` options: the bean name becomes the scheme of its endpoints.
