@@ -1,0 +1,11 @@
+# the configuration of micronaut.camel.docs.integrations.WeatherToolsTest
+# tag::mcp[]
+micronaut:
+  mcp:
+    server:
+      transport: HTTP
+camel:
+  server:
+    mcp-enabled: true
+    mcp-tags: weather
+# end::mcp[]

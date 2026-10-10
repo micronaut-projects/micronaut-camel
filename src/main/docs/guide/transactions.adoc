@@ -31,7 +31,7 @@ NOTE: Micronaut Data needs `micronaut-json-core` on the classpath, which an appl
 
 `transacted()` runs the rest of the route in a Micronaut transaction:
 
-snippet::io.micronaut.camel.docs.transactions.HorseRoutes[tags="routes", indent=0, title="Transacted routes", languages="java,kotlin,groovy"]
+snippet::io.micronaut.camel.docs.transactions.HorseRoutes[tags="routes", indent=0, title="Transacted routes"]
 
 <1> The rest of the route runs in a transaction, which commits when the exchange completes.
 <2> The `sql` component joins the transaction.
@@ -82,7 +82,7 @@ An exception handled by `onException(...).handled(true)` does not roll the trans
 
 The policies use the primary Micronaut `TransactionOperations` bean, which is the transaction manager of the `default` data source. To use other transaction settings, or the transaction manager of another data source, declare a `MicronautTransactionPolicy` bean:
 
-snippet::io.micronaut.camel.docs.transactions.TransactionPolicies[tags="policy", indent=0, title="A custom transaction policy", languages="java,kotlin,groovy"]
+snippet::io.micronaut.camel.docs.transactions.TransactionPolicies[tags="policy", indent=0, title="A custom transaction policy"]
 
 <1> The name of the bean is the name routes pass to `transacted(...)`. Inject a qualified `TransactionOperations` to use another data source.
 <2> The policy runs transactions with the given definition: here read-only, with a timeout.
@@ -104,13 +104,13 @@ Micronaut code that injects a `DataSource` still gets the Micronaut Data one.
 
 Camel's `JdbcMessageIdRepository` and `JdbcAggregationRepository` take a data source and a Spring transaction manager. With Micronaut Data Spring JDBC, use the `DataSourceTransactionManager` bean, so that the repository joins the transaction of the route:
 
-snippet::io.micronaut.camel.docs.transactions.ProcessedOrders[tags="repository", indent=0, title="An idempotent repository", languages="java,kotlin,groovy"]
+snippet::io.micronaut.camel.docs.transactions.ProcessedOrders[tags="repository", indent=0, title="An idempotent repository"]
 
 <1> The `DataSourceTransactionManager` of the `default` data source.
 <2> The data source of the transaction manager is the connection pool itself, which Spring JDBC uses directly.
 <3> The repository updates its table in the transaction of the route.
 
-snippet::io.micronaut.camel.docs.transactions.OrderRoutes[tags="routes", indent=0, title="An idempotent consumer in a transacted route", languages="java,kotlin,groovy"]
+snippet::io.micronaut.camel.docs.transactions.OrderRoutes[tags="routes", indent=0, title="An idempotent consumer in a transacted route"]
 
 <1> The repository records the order ID in the transaction of the route.
 <2> When the route fails, the record of the order ID is rolled back with the order, so the order can be sent again.
@@ -121,7 +121,7 @@ snippet::io.micronaut.camel.docs.transactions.OrderRoutes[tags="routes", indent=
 
 `JdbcAggregationRepository` stores the exchanges being aggregated with Java serialization by default, so every body and header must be `Serializable`, and, in a native image, registered for serialization. The `JsonJdbcCamelCodec` bean of `micronaut-camel-core` stores them as JSON with the Micronaut `JsonMapper` instead, when `micronaut-serde-jackson` (or `micronaut-jackson-databind`) is on the classpath:
 
-snippet::io.micronaut.camel.docs.transactions.OrderAggregations[tags="repository", indent=0, title="An aggregation repository storing JSON", languages="java"]
+snippet::io.micronaut.camel.docs.transactions.OrderAggregations[tags="repository", indent=0, title="An aggregation repository storing JSON", languages="java,python"]
 
 <1> The codec is a bean.
 <2> The repository writes and reads its exchanges with the codec.

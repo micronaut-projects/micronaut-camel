@@ -5,22 +5,64 @@ plugins {
 }
 
 dependencies {
+    // the Java helpers of src/test/java, such as the services of the samples, are processed by javac
+    testAnnotationProcessor(mn.micronaut.inject.java)
     // Annotation processors MUST be testImplementation (not testAnnotationProcessor): the Python
     // compiler takes the compile classpath as its annotation processor path.
     testImplementation(mn.micronaut.inject.python.test)
     testImplementation(mn.micronaut.context.python)
+    testImplementation(projects.micronautCamelProcessor)
+    testImplementation(mnValidation.micronaut.validation.processor)
 
     testImplementation(projects.micronautCamelCore)
+    testImplementation(projects.micronautCamelPlatformHttp)
     testImplementation(projects.micronautCamelTest)
+    testImplementation(mnData.micronaut.data.spring.jdbc)
+    testImplementation(mnData.micronaut.data.tx)
+    testImplementation(mnSql.micronaut.jdbc.hikari)
+    testImplementation(libs.camel.ai.tool)
     testImplementation(libs.camel.bean)
+    testImplementation(libs.camel.bean.validator) {
+        // micronaut-validation is the validator
+        exclude(group: 'org.hibernate.validator')
+    }
     testImplementation(libs.camel.direct)
+    testImplementation(libs.camel.endpointdsl)
+    testImplementation(libs.camel.file)
+    testImplementation(libs.camel.health)
+    testImplementation(libs.camel.jackson3)
+    testImplementation(libs.camel.kafka)
     testImplementation(libs.camel.log)
     testImplementation(libs.camel.management)
+    testImplementation(libs.camel.mcp.server.api)
+    testImplementation(libs.camel.micrometer)
     testImplementation(libs.camel.mock)
+    testImplementation(libs.camel.rest)
     testImplementation(libs.camel.seda)
+    testImplementation(libs.camel.spring.redis)
+    testImplementation(libs.camel.sql)
+    testImplementation(libs.camel.yaml.dsl)
+    testImplementation(mn.micronaut.http.client)
+    testImplementation(mn.micronaut.http.server.netty)
+    testImplementation(mn.micronaut.jackson.databind)
+    testImplementation(mn.micronaut.management)
+    testImplementation(mnCache.micronaut.cache.caffeine)
+    testImplementation(mnKafka.micronaut.kafka)
+    testImplementation(mnMcp.micronaut.mcp.server.java.sdk)
+    testImplementation(mnMicrometer.micronaut.micrometer.core)
+    testImplementation(mnObjectStorage.micronaut.object.storage.local)
+    testImplementation(mnRedis.micronaut.redis.lettuce.core)
+    testImplementation(mnSecurity.micronaut.security)
+    testImplementation(mnValidation.micronaut.validation)
     testImplementation(mnTest.micronaut.test.junit5)
     testImplementation(mnTest.junit.jupiter.api)
+    testImplementation(platform(mnTest.boms.testcontainers))
+    testImplementation(libs.testcontainers.core)
+    testImplementation(libs.testcontainers.kafka)
     testRuntimeOnly(mnLogging.logback.classic)
+    testRuntimeOnly(mn.micronaut.json.core)
+    testRuntimeOnly(mnSql.h2)
+    testRuntimeOnly(mn.snakeyaml)
 }
 
 tasks.withType(Test).configureEach {

@@ -24,6 +24,7 @@ import io.micronaut.inject.ast.ElementQuery;
 import io.micronaut.inject.ast.FieldElement;
 import io.micronaut.inject.ast.MethodElement;
 import io.micronaut.inject.ast.ParameterElement;
+import io.micronaut.inject.ast.PropertyElement;
 import io.micronaut.inject.ast.TypedElement;
 import io.micronaut.inject.processing.ProcessingException;
 import io.micronaut.inject.visitor.TypeElementVisitor;
@@ -112,6 +113,20 @@ public final class CamelAnnotationsVisitor implements TypeElementVisitor<Object,
                 writeNativeMetadata(element, List.of("reflect=" + element.getName()), context);
             }
             return;
+        }
+        if (context.getLanguage() == VisitorContext.Language.PYTHON) {
+            // the attributes of a Python class are bean properties, which Micronaut injects through setters
+            for (PropertyElement property : element.getBeanProperties()) {
+                if (isEndpointInjection(property)) {
+                    property.annotate(INJECT);
+                    qualify(property, property, element, context);
+                } else if (property.hasDeclaredAnnotation(BEAN_INJECT)) {
+                    property.annotate(INJECT);
+                    beanInject(property, property);
+                } else if (property.hasDeclaredAnnotation(PROPERTY_INJECT)) {
+                    propertyInject(property, property);
+                }
+            }
         }
         if (element.hasDeclaredAnnotation(CONVERTER)) {
             ConverterGenerator.converterLoader(element, context).ifPresent(loader -> write(loader, element, context));
@@ -333,9 +348,13 @@ public final class CamelAnnotationsVisitor implements TypeElementVisitor<Object,
     }
 
     private static void write(ObjectDef objectDef, ClassElement originatingElement, VisitorContext context) {
-        SourceGenerator generator = SourceGenerators.findByLanguage(context.getLanguage()).orElse(null);
+        // Python compilations write Java sources, which javac compiles with the stubs of the Python classes
+        VisitorContext.Language language = context.getLanguage() == VisitorContext.Language.PYTHON
+            ? VisitorContext.Language.JAVA
+            : context.getLanguage();
+        SourceGenerator generator = SourceGenerators.findByLanguage(language).orElse(null);
         if (generator == null) {
-            context.fail("No source generator for " + context.getLanguage() + ": add micronaut-sourcegen to the annotation processor path", originatingElement);
+            context.fail("No source generator for " + language + ": add micronaut-sourcegen to the annotation processor path", originatingElement);
             return;
         }
         try {

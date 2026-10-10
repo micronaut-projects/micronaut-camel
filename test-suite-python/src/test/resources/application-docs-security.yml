@@ -1,0 +1,10 @@
+# the configuration of micronaut.camel.docs.integrations.AdminRoutesTest
+# tag::security[]
+micronaut:
+  security:
+    enabled: true
+    intercept-url-map:
+      - pattern: /admin/**
+        access:
+          - isAuthenticated()
+# end::security[]

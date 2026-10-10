@@ -12,7 +12,7 @@ The routes are served by any Micronaut HTTP server, including the servlet contai
 
 A route consumes the requests to a path with a `platform-http:` endpoint:
 
-snippet::io.micronaut.camel.docs.http.HelloRoutes[tags="routes", indent=0, title="A platform-http route", languages="java,kotlin,groovy"]
+snippet::io.micronaut.camel.docs.http.HelloRoutes[tags="routes", indent=0, title="A platform-http route"]
 
 <1> The route serves `GET` requests to `/hello/{name}`. Without `httpMethodRestrict`, it serves every method.
 <2> The `{name}` path parameter is a message header.
@@ -41,14 +41,16 @@ dependency:org.apache.camel:camel-rest[]
 
 dependency:org.apache.camel:camel-jackson[]
 
-snippet::io.micronaut.camel.docs.http.Book[tags="book", indent=0, title="A type exchanged as JSON", languages="java,kotlin,groovy"]
+snippet::io.micronaut.camel.docs.http.Book[tags="book", indent=0, title="A type exchanged as JSON"]
 
-snippet::io.micronaut.camel.docs.http.BookRoutes[tags="routes", indent=0, title="REST services", languages="java,kotlin,groovy"]
+snippet::io.micronaut.camel.docs.http.BookRoutes[tags="routes", indent=0, title="REST services"]
 
 <1> Bodies are bound to and from JSON.
 <2> A `POST` to `/books` receives a `Book`.
 <3> A `GET` to `/books/{isbn}` returns a `Book`. The `isbn` path parameter is a header.
 <4> The response status is `201 Created`.
+
+In Python, the type is an `@Introspected` dataclass: its generated Java class then has the constructor that Jackson binds the JSON to.
 
 The REST configuration is set with `restConfiguration()` in a route builder, or with the `camel.rest.*` options, for example `camel.rest.context-path` to serve every REST service below a path. Camel's https://camel.apache.org/components/next/rest-openapi-component.html[rest-openapi] component, which serves the operations of an OpenAPI contract, and the `apiContextPath` of the REST configuration, described below, also use the `platform-http` component.
 
@@ -102,13 +104,15 @@ Camel routes and Micronaut routes share the server. A request goes to a Camel ro
 
 The requests to Camel routes go through the Micronaut server filters, so filters, such as those of Micronaut Security, apply to Camel routes as they apply to controllers:
 
-snippet::io.micronaut.camel.docs.http.ApiKeyFilter[tags="filter", indent=0, title="A filter in front of REST services", languages="java,kotlin,groovy"]
+snippet::io.micronaut.camel.docs.http.ApiKeyFilter[tags="filter", indent=0, title="A filter in front of REST services"]
 
 <1> The filter applies to the paths of the REST services.
 <2> A request without the API key is rejected before it reaches Camel.
 <3> Other requests continue to Camel.
 
 The request body is read without blocking the event loop. Camel then processes the exchange on the executor named `blocking` (`TaskExecutors.BLOCKING`), so routes may block, and the request context is propagated: `ServerRequestContext.currentRequest()` returns the request in the route.
+
+NOTE: GraalPy does not run Python code on virtual threads, which the `blocking` executor uses when they are available. When routes call Python code, such as a Python processor, configure the executor with platform threads: `micronaut.executors.blocking.virtual: false`.
 
 Routes are registered when they start, and removed when they stop, so a stopped route no longer serves its path. A suspended route responds with `503 Service Unavailable`.
 
