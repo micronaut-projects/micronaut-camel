@@ -171,3 +171,90 @@ camel:
 ----
 
 Camel uses the `Tracer` and the context propagators of the Micronaut `OpenTelemetry` bean, so its spans are exported with Micronaut's, and a route called while a Micronaut span is current, for example by a controller, joins its trace. Spans are exported as configured by the `otel.*` options of Micronaut Tracing, such as `otel.traces.exporter`.
+
+=== Clustering
+
+Camel's cluster services elect a leader among the instances of an application, so that some routes, such as a route that polls a file system or a database, run on one instance only. As with Camel Main, a cluster service is configured with the `camel.cluster.<type>.*` options, for example the file lock service of `camel-file`, which elects the leader with a lock file in a shared directory:
+
+[configuration]
+----
+camel:
+  cluster:
+    file:
+      id: ${random.shortuuid}
+      root: /shared/cluster
+      acquire-lock-interval: 5
+----
+
+The services of `camel-kubernetes` (`camel.cluster.kubernetes.*`), `camel-zookeeper` (`camel.cluster.zookeeper.*`), `camel-consul`, `camel-infinispan` and `camel-jgroups-raft` are configured the same way. A bean that implements `CamelClusterService` is also added to the `CamelContext`, so a cluster service can be created as a Micronaut bean instead:
+
+[source,java]
+----
+@Factory
+class ClusterFactory {
+
+    @Singleton
+    CamelClusterService clusterService() {
+        FileLockClusterService service = new FileLockClusterService();
+        service.setRoot("/shared/cluster");
+        return service;
+    }
+}
+----
+
+A route then runs on the leader only when it consumes from a `master:` endpoint, of `camel-master`, which wraps the endpoint of the route, or when it has a `ClusteredRoutePolicy`:
+
+[source,java]
+----
+from("master:reports:timer:reports?period=60000") // <1>
+    .to("direct:report");
+----
+<1> The instance that holds the leadership of the `reports` namespace consumes from `timer:reports`.
+
+=== Supervising route controller
+
+A route whose consumer cannot start, for example because a broker is down, makes the application fail to start. With the supervising route controller, enabled with `camel.routecontroller.enabled`, the application starts and the controller restarts the route in the background, with a back-off:
+
+[configuration]
+----
+camel:
+  routecontroller:
+    enabled: true
+    back-off-delay: 5000
+    back-off-max-attempts: 10
+    exclude-routes: audit*
+----
+
+The routes that the controller restarts, or has given up restarting, are reported by Camel's route health checks, and so by the `camel` health indicator: `camel.routecontroller.unhealthy-on-restarting` and `camel.routecontroller.unhealthy-on-exhausted` decide whether they are DOWN.
+
+=== Debugging
+
+Camel's debugger, which the Camel tooling of IntelliJ IDEA and Visual Studio Code uses to set breakpoints in routes, is enabled with the `camel.debug.*` options of Camel Main:
+
+[configuration]
+----
+camel:
+  debug:
+    enabled: true
+    breakpoints: process-order
+    wait-for-attach: false
+----
+
+The debugger suspends the exchanges at the nodes with the ids of `camel.debug.breakpoints` (or every route with `_all_routes_`), and the tools control it through JMX: Camel starts a JMX connector on port 1099 (`camel.debug.jmx-connector-port`) unless `camel.debug.jmx-connector-enabled` is `false`. With `camel.debug.standby: true`, the debugger is installed but only enabled by the tools.
+
+Adding the `camel-debug` dependency enables the debugger on its own, with the JMX connector, as Camel does in every runtime: only add it to development builds.
+
+=== Camel CLI
+
+The Camel CLI of https://camel.apache.org/manual/camel-jbang.html[Camel JBang] lists and controls the Camel applications that run on the machine: `camel ps` lists them, `camel get route` shows their routes, `camel trace` and `camel debug` follow their messages, and `camel stop` stops them. A Micronaut application appears in the CLI when it has the CLI connector:
+
+dependency:org.apache.camel:camel-cli-connector[]
+
+The CLI reports the application as a Micronaut application, and `camel stop` closes the Micronaut application context, which stops Camel and the rest of the application, as Camel Spring Boot closes the Spring context. The connector communicates through files in the `.camel` directory of the user's home directory, and is disabled with `camel.cli.enabled: false`, for example in production:
+
+[configuration]
+----
+camel:
+  cli:
+    enabled: false
+----
