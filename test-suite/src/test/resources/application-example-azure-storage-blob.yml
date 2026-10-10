@@ -1,0 +1,23 @@
+# Ports azure/camel-example-spring-boot-azure-storage-blob/src/main/resources/application.yml
+azure:
+  storage:
+    account-name: ${AZURE_STORAGE_ACCOUNT_NAME:devstoreaccount1}
+    container-name: ${AZURE_STORAGE_CONTAINER_NAME:yourcontainer}
+  # the shared key credential of Micronaut Azure, instead of azure.storage.access-key
+  credential:
+    storage-shared-key:
+      account-name: ${azure.storage.account-name}
+      account-key: ${AZURE_STORAGE_ACCESS_KEY:}
+
+micronaut:
+  object-storage:
+    azure:
+      # the BlobServiceClient that Camel autowires into the azure-storage-blob component
+      blobs:
+        endpoint: https://${azure.storage.account-name}.blob.core.windows.net
+        container: ${azure.storage.container-name}
+
+camel:
+  component:
+    azure-storage-blob:
+      credential-type: SHARED_KEY_CREDENTIAL

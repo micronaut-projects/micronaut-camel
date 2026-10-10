@@ -45,5 +45,13 @@ micronautBuild {
     importMicronautCatalog("micronaut-nats")
     importMicronautCatalog("micronaut-rabbitmq")
     importMicronautCatalog("micronaut-data")
+    importMicronautCatalog("micronaut-security")
+    importMicronautCatalog("micronaut-redis")
+    importMicronautCatalog("micronaut-validation")
+    importMicronautCatalog("micronaut-object-storage")
+    importMicronautCatalog("micronaut-mcp")
+    importMicronautCatalog("micronaut-langchain4j")
+    importMicronautCatalog("micronaut-aws")
+    importMicronautCatalog("micronaut-azure")
     importMicronautCatalog("micronaut-sql")
 }

@@ -33,6 +33,7 @@ dependencies {
     testImplementation(platform(mnTest.boms.testcontainers))
     testImplementation(libs.testcontainers.kafka)
     testImplementation(mnTest.micronaut.test.spock)
+    testImplementation(mnObjectStorage.micronaut.object.storage.local)
     testRuntimeOnly(mnLogging.logback.classic)
     testRuntimeOnly(mn.micronaut.json.core)
     testRuntimeOnly(mnSql.h2)

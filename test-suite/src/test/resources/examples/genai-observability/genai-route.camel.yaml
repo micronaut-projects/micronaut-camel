@@ -1,0 +1,32 @@
+# Ports genai-observability/src/main/resources/camel/genai-route.camel.yaml
+- route:
+    id: genai-chat-1
+    from:
+      uri: timer:genai1
+      parameters:
+        period: "15000"
+      steps:
+        - setBody:
+            constant: "In one sentence, what is Apache Camel integration?"
+        - to:
+            uri: langchain4j-chat:model1
+            parameters:
+              chatModel: "#ollamaChatModel"
+        - log:
+            message: "[${header.CamelLangChain4jChatResponseModel}] LLM reply: ${body}"
+
+- route:
+    id: genai-chat-2
+    from:
+      uri: timer:genai2
+      parameters:
+        period: "20000"
+      steps:
+        - setBody:
+            constant: "In one sentence, what is an Enterprise Integration Pattern?"
+        - to:
+            uri: langchain4j-chat:model2
+            parameters:
+              chatModel: "#ollamaChatModel"
+        - log:
+            message: "[${header.CamelLangChain4jChatResponseModel}] LLM reply: ${body}"

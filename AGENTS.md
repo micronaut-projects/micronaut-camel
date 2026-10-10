@@ -18,8 +18,9 @@ Micronaut Camel integrates Apache Camel 4 with Micronaut 5. It was created from 
 - `test-suite/src/test/java/io/micronaut/camel/examples/<name>` ports a camel-spring-boot-examples example: its beans are `@Requires(env = "example-<name>")`, its test is `@MicronautTest(environments = "example-<name>")` and its configuration is `application-example-<name>.yml`.
 - `test-suite-graal` runs Camel in a native image with `./gradlew :test-suite-graal:nativeTest` (GraalVM 25). The `CamelNativeFeature` of `camel-core` registers the classes of Camel's service files and the classes the processor lists under `META-INF/micronaut-camel/native`; keep new reflective or service-file-based features covered there.
 - `camel-core` integrates other Micronaut modules in sub-packages, behind `@Requires(classes = ...)` with `compileOnly` dependencies: `transaction` runs `transacted()` routes in Micronaut Data transactions (`MicronautTransactionPolicy`, named `PROPAGATION_*` policy beans, a transactional error handler), and `jdbc` gives Camel a `DataSource` that joins the current Micronaut transaction and works outside one. Registry beans are adapted for Camel by `CamelBeanAdapter` beans.
-- `test-suite`, `test-suite-kotlin` (KSP) and `test-suite-groovy` (Spock) hold the guide samples. Every sample is a `snippet::` with the same fully qualified name, under `io.micronaut.camel.docs`, in each suite.
 - The test suites' `application.yml` configures an H2 data source with `transaction-manager: springJdbc` (micronaut-data-spring-jdbc) for the transaction samples. Examples needing PostgreSQL or Kafka start them with Testcontainers and are skipped without a container runtime.
+- `test-suite` has Micronaut Security on the classpath but disabled (`micronaut.security.enabled: false` in `application.yml`); the tests that need it use their own environment. Every guide sample route loads in every test of its suite, including the example tests: the REST DSL samples bind JSON, so example REST services that do not bind set `bindingMode: off`.
+- Tests that need a service (Redis, LocalStack, Azurite, Vault, PostgreSQL, Qdrant) start it with Testcontainers in a `TestPropertyProvider` and stop it in `@AfterAll`. Under Podman, run them with `TESTCONTAINERS_RYUK_DISABLED=true`; containers whose Testcontainers module mounts the Docker socket (LocalStack) run as generic containers.
 - `.agents/skills/` is shared agent guidance synced from the template.
 
 ## Scope
@@ -29,11 +30,11 @@ Micronaut Camel integrates Apache Camel 4 with Micronaut 5. It was created from 
 
 ## Versions
 
-- Micronaut core is 5.2.x, micronaut-micrometer 6.1.x and micronaut-tracing 8.3.x (catalogs `mnMicrometer` and `mnTracing`), and Camel is 4.22.x (`managed-camel` in `gradle/libs.versions.toml`). The generated code follows the Camel catalog of that version, so upgrading Camel regenerates it.
+- Micronaut core is 5.2.x, micronaut-micrometer 6.1.x and micronaut-tracing 8.3.x (catalogs `mnMicrometer` and `mnTracing`); the other module catalogs (`mnSecurity`, `mnRedis`, `mnValidation`, `mnObjectStorage`, `mnMcp`, `mnLangchain4j`, `mnAws`, `mnAzure`, `mnSql`) follow the versions of Micronaut Platform 5.2, and Camel is 4.22.x (`managed-camel` in `gradle/libs.versions.toml`). The generated code follows the Camel catalog of that version, so upgrading Camel regenerates it.
 
 ## Code
 
-- Integrations with other Micronaut modules live in `camel-core` sub-packages (`event`, `scheduling`, `cache`, `json`, `vault`...) behind `@Requires`, with `compileOnly` dependencies: no module per integration.
+- Integrations with other Micronaut modules live in `camel-core` sub-packages (`event`, `scheduling`, `cache`, `json`, `vault`, `security`, `redis`, `objectstorage`, `httpclient`, `mcp`...) behind `@Requires`, with `compileOnly` dependencies: no module per integration. Components of `camel-core` (`micronaut-event`, `object-storage`, `micronaut-http`) are `@Named` beans that the registry bridge finds by scheme. The MCP integration plugs into camel-main's `camel.server.mcp-*` options with a `McpServerFactory` bean, so it needs only `camel-mcp-server-api`.
 
 - JSpecify `@NullMarked` goes only on `package-info.java`; every package has one. Use `org.jspecify.annotations.Nullable` for nullable types.
 

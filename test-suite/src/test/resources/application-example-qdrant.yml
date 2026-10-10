@@ -1,0 +1,15 @@
+# Ports qdrant/src/main/resources/application.properties
+# The ChatModel and EmbeddingModel beans replace camel.component.openai.*: with micronaut-langchain4j they come
+# from its configuration, for example langchain4j.ollama.chat-model.* and langchain4j.ollama.embedding-model.*
+camel:
+  main:
+    name: QdrantRAGExample
+    routes-include-pattern: classpath:examples/qdrant/*.yaml
+  component:
+    qdrant:
+      host: localhost
+      port: 6334
+      max-results: 10
+
+input:
+  dir: build/resources/test/examples/qdrant/input

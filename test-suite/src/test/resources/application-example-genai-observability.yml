@@ -1,0 +1,6 @@
+# Ports genai-observability/src/main/resources/application.properties
+# The ollamaChatModel bean comes from micronaut-langchain4j-ollama in an application
+# (langchain4j.ollama.chat-model.*). camel.aiobservability.* is not ported: camel-ai-observability is new in Camel 4.23.
+camel:
+  main:
+    routes-include-pattern: classpath:examples/genai-observability/*.yaml

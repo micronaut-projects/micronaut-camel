@@ -1,0 +1,55 @@
+# Ports vault/src/main/resources/camel/cars-routes.yaml
+# The cars are written as JSON with the micronaut-json data format instead of camel-jackson.
+- route:
+    from:
+      uri: timer
+      parameters:
+        timerName: create-database
+        fixedRate: false
+        repeatCount: "1"
+      steps:
+        - setBody:
+            expression:
+              constant:
+                expression: |-
+                  CREATE TABLE IF NOT EXISTS cars (
+                    brand VARCHAR(255),
+                    model VARCHAR(255),
+                    year INT
+                  );
+        - to:
+            uri: jdbc
+            parameters:
+              dataSourceName: datasource
+- route:
+    from:
+      uri: direct
+      parameters:
+        name: create
+      steps:
+        - setBody:
+            expression:
+              simple:
+                expression: >-
+                  INSERT INTO cars (brand, model, year)
+                  VALUES ('${jsonpath($.brand)}', '${jsonpath($.model)}', ${jsonpath($.year)});
+        - to:
+            uri: jdbc
+            parameters:
+              dataSourceName: datasource
+- route:
+    from:
+      uri: direct
+      parameters:
+        name: get
+      steps:
+        - setBody:
+            expression:
+              simple:
+                expression: SELECT * FROM cars
+        - to:
+            uri: jdbc
+            parameters:
+              dataSourceName: datasource
+        - marshal:
+            custom: micronaut-json

@@ -1,4 +1,12 @@
 micronaut:
+  security:
+    # enabled by the docs-security environment of io.micronaut.camel.docs.integrations.AdminRoutesTest
+    enabled: false
+  object-storage:
+    local:
+      # the object storage of io.micronaut.camel.docs.integrations.DocumentRoutes
+      documents:
+        path: build/tmp/docs-documents
   caches:
     # the idempotent repository of io.micronaut.camel.docs.integrations.IntegrationRoutes
     imports:

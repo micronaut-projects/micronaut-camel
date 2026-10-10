@@ -1,0 +1,10 @@
+# Ports aws2-s3/src/main/resources/application.properties
+# the aws2-s3 component uses the S3Client bean of Micronaut AWS, configured with aws.*,
+# instead of camel.component.aws2-s3.access-key, secret-key and region
+bucketName: camel-kafka-connector
+
+camel:
+  component:
+    aws2-s3:
+      # LocalStack starts without the bucket
+      auto-create-bucket: true

@@ -6,6 +6,7 @@ plugins {
 dependencies {
     testAnnotationProcessor(mn.micronaut.inject.java)
     testAnnotationProcessor(projects.micronautCamelProcessor)
+    testAnnotationProcessor(mnValidation.micronaut.validation.processor)
     testImplementation(projects.micronautCamelCore)
     testImplementation(projects.micronautCamelHttp)
     testImplementation(projects.micronautCamelTest)
@@ -63,9 +64,37 @@ dependencies {
     testImplementation(libs.testcontainers.rabbitmq)
     testImplementation(libs.testcontainers.junit.jupiter)
     testImplementation(libs.testcontainers.postgresql)
+    // Micronaut ecosystem integrations
+    testImplementation(mnSecurity.micronaut.security)
+    testImplementation(mnRedis.micronaut.redis.lettuce.core)
+    testImplementation(libs.camel.spring.redis)
+    testImplementation(mnValidation.micronaut.validation)
+    testImplementation(libs.camel.bean.validator) {
+        // micronaut-validation is the validator
+        exclude(group: 'org.hibernate.validator')
+    }
+    testImplementation(mnObjectStorage.micronaut.object.storage.local)
+    testImplementation(mnMcp.micronaut.mcp.server.java.sdk)
+    testImplementation(libs.camel.ai.tool)
+    testImplementation(libs.camel.mcp.server.api)
+
+    // cloud and AI examples
+    testImplementation(libs.camel.aws2.s3)
+    testImplementation(mnAws.micronaut.aws.sdk.v2)
+    testImplementation(libs.camel.azure.storage.blob)
+    testImplementation(mnObjectStorage.micronaut.object.storage.azure)
+    testImplementation(libs.camel.hashicorp.vault)
+    testImplementation(libs.camel.jdbc)
+    testImplementation(libs.camel.langchain4j.chat)
+    testImplementation(libs.camel.langchain4j.embeddings)
+    testImplementation(libs.camel.qdrant)
+    testRuntimeOnly(mnSql.postgresql)
+    // the services of the examples
+    testImplementation(libs.testcontainers.core)
+    testImplementation(libs.testcontainers.qdrant)
+    testImplementation(libs.testcontainers.vault)
     testRuntimeOnly(mnLogging.logback.classic)
     testRuntimeOnly(mn.micronaut.json.core)
     testRuntimeOnly(mnSql.h2)
-    testRuntimeOnly(mnSql.postgresql)
     testRuntimeOnly(mn.snakeyaml)
 }
