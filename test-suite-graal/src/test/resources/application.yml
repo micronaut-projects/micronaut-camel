@@ -1,0 +1,8 @@
+camel:
+  main:
+    name: native
+  component:
+    seda:
+      queue-size: 42
+shop:
+  currency: EUR

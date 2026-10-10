@@ -18,6 +18,8 @@ http:
   title: HTTP and REST
 testing:
   title: Testing
+native:
+  title: GraalVM Native Image
 operations:
   title: Health, Management and Observability
 repository: Repository

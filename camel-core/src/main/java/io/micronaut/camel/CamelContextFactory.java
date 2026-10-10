@@ -15,6 +15,7 @@
  */
 package io.micronaut.camel;
 
+import io.micronaut.camel.graal.NativePackageScanResourceResolver;
 import io.micronaut.camel.properties.MicronautPropertiesSource;
 import io.micronaut.camel.registry.CamelInternal;
 import io.micronaut.camel.registry.MicronautBeanRepository;
@@ -32,6 +33,7 @@ import org.apache.camel.FluentProducerTemplate;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.TypeConverter;
 import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.spi.PackageScanResourceResolver;
 
 /**
  * Creates the {@link CamelContext} and the Camel templates as beans.
@@ -64,6 +66,9 @@ final class CamelContextFactory {
         camelContext.getCamelContextExtension().setRegistry(registry);
         camelContext.getPropertiesComponent().addPropertiesSource(new MicronautPropertiesSource(environment));
         camelContext.getTypeConverterRegistry().addFallbackTypeConverter(new ConversionServiceTypeConverter(conversionService), false);
+        if (NativePackageScanResourceResolver.inNativeImage()) {
+            camelContext.getCamelContextExtension().addContextPlugin(PackageScanResourceResolver.class, new NativePackageScanResourceResolver());
+        }
         return new MicronautCamelMain(camelContext);
     }
 

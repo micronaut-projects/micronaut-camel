@@ -32,7 +32,11 @@ import io.micronaut.sourcegen.generator.SourceGenerator;
 import io.micronaut.sourcegen.generator.SourceGenerators;
 import io.micronaut.sourcegen.model.ObjectDef;
 
+import java.io.IOException;
+import java.io.Writer;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -102,8 +106,10 @@ public final class CamelAnnotationsVisitor implements TypeElementVisitor<Object,
             if (element.hasDeclaredAnnotation(CONVERTER)) {
                 element.annotate(SINGLETON);
                 element.annotate(CAMEL_CONVERTERS);
+                writeNativeMetadata(element, List.of("reflect=" + element.getName()), context);
             } else if (hasCamelMembers(element)) {
                 element.annotate(CAMEL_POST_PROCESS);
+                writeNativeMetadata(element, List.of("reflect=" + element.getName()), context);
             }
             return;
         }
@@ -115,6 +121,46 @@ public final class CamelAnnotationsVisitor implements TypeElementVisitor<Object,
         if (!types.isEmpty()) {
             write(InjectionFactoryGenerator.factory(element, types), element, context);
         }
+        writeNativeMetadata(element, nativeMetadata(element, types), context);
+    }
+
+    /**
+     * What a native image needs for a class: the interfaces Camel proxies for {@code @Produce}, and the
+     * class itself when Camel invokes its {@code @Consume} methods by reflection.
+     */
+    private static List<String> nativeMetadata(ClassElement element, Map<String, ClassElement> injectedTypes) {
+        List<String> lines = new ArrayList<>();
+        for (ClassElement type : injectedTypes.values()) {
+            if (type.isInterface() && !type.getName().startsWith("org.apache.camel.")) {
+                lines.add("proxy=" + type.getName());
+            }
+        }
+        boolean consumes = !element.getEnclosedElements(ElementQuery.ALL_METHODS.onlyDeclared()
+            .annotated(metadata -> metadata.hasDeclaredAnnotation(CONSUME))).isEmpty();
+        if (consumes) {
+            lines.add("reflect=" + element.getName());
+        }
+        return lines;
+    }
+
+    /**
+     * Lists what a native image needs for a class, which the GraalVM feature of micronaut-camel-core
+     * registers when the image is built.
+     */
+    private static void writeNativeMetadata(ClassElement element, List<String> lines, VisitorContext context) {
+        if (lines.isEmpty()) {
+            return;
+        }
+        context.visitMetaInfFile("micronaut-camel/native/" + element.getName(), element).ifPresent(file -> {
+            try (Writer writer = file.openWriter()) {
+                for (String line : lines) {
+                    writer.write(line);
+                    writer.write('\n');
+                }
+            } catch (IOException e) {
+                throw new ProcessingException(element, "Failed to write the native image metadata: " + e.getMessage(), e);
+            }
+        });
     }
 
     @Override
