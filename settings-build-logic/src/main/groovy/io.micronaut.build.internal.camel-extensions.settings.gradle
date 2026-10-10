@@ -1,0 +1,82 @@
+/*
+ * Creates a module per Camel extension artifact, such as micronaut-camel-kafka for camel-kafka,
+ * without a directory in the repository: the modules are listed by the Camel catalog of the build.
+ *
+ * Each module depends on micronaut-camel-core and on the Camel artifact, and holds the
+ * @ConfigurationProperties that the processor generates for the components, data formats and
+ * languages of that artifact. A project of the build with the name of an extension artifact, such as
+ * camel-platform-http, is that module instead: it gets the same dependencies and configuration.
+ *
+ * The plugin must be applied before io.micronaut.build.shared.settings, which renames the projects.
+ */
+import org.apache.camel.catalog.DefaultCamelCatalog
+import org.apache.camel.tooling.model.ArtifactModel
+
+// The extensions that need Spring Boot
+def excluded = ['camel-spring-batch', 'camel-spring-ws', 'camel-spring-ai-*']
+    .collect { java.util.regex.Pattern.compile(it.replace('*', '.*')) }
+
+def catalog = new DefaultCamelCatalog(true)
+Map<String, Map<String, Object>> artifacts = new TreeMap<>()
+def addExtensions = { String kind, List<String> names, Closure<ArtifactModel<?>> model ->
+    for (String name : names) {
+        ArtifactModel<?> extension = model(name)
+        String artifactId = extension.artifactId
+        if (excluded.any { it.matcher(artifactId).matches() }) {
+            continue
+        }
+        Map<String, Object> artifact = artifacts.computeIfAbsent(artifactId) { [
+            artifactId : it,
+            module     : 'micronaut-' + it,
+            packageName: 'io.micronaut.camel.components.' + packageSegments(it.substring('camel-'.length())),
+            extensions : []
+        ] }
+        artifact.extensions << [
+            kind       : kind,
+            name       : extension.name,
+            title      : extension.title,
+            description: extension.description ?: '',
+            deprecated : extension.deprecated
+        ]
+    }
+}
+addExtensions('component', catalog.findComponentNames()) { catalog.componentModel(it) }
+addExtensions('dataformat', catalog.findDataFormatNames()) { catalog.dataFormatModel(it) }
+addExtensions('language', catalog.findLanguageNames()) { catalog.languageModel(it) }
+artifacts.values().each { artifact ->
+    def first = artifact.extensions.first()
+    artifact.title = artifact.extensions.size() == 1 ? first.title : artifact.extensions*.title.join(', ')
+}
+
+// read by the camel-extension convention plugin and the guide
+gradle.extensions.extraProperties.set('camelExtensions', artifacts)
+gradle.extensions.extraProperties.set('camelVersion', catalog.catalogVersion)
+
+gradle.settingsEvaluated { Settings s ->
+    Map<File, String> projectArtifacts = [:]
+    artifacts.keySet().each { String artifactId ->
+        def existing = s.findProject(":$artifactId")
+        if (existing == null) {
+            File dir = new File(s.rootDir, "target/camel-extensions/$artifactId")
+            dir.mkdirs()
+            s.include(":$artifactId")
+            existing = s.project(":$artifactId")
+            existing.projectDir = dir
+        }
+        projectArtifacts[existing.projectDir.canonicalFile] = artifactId
+    }
+    s.gradle.beforeProject { Project p ->
+        String artifactId = projectArtifacts[p.projectDir.canonicalFile]
+        if (artifactId != null) {
+            p.extensions.extraProperties.set('camelArtifact', artifactId)
+            p.pluginManager.apply('io.micronaut.build.internal.camel-extension')
+        }
+    }
+}
+
+String packageSegments(String name) {
+    name.split('-').collect { String segment ->
+        String id = segment.replaceAll('[^A-Za-z0-9_]', '_')
+        (Character.isJavaIdentifierStart(id.charAt(0)) && !javax.lang.model.SourceVersion.isKeyword(id)) ? id : '_' + id
+    }.join('.')
+}

@@ -36,11 +36,11 @@ Routes then use `kafka:orders` for the first cluster and `audit:events` for the 
 
 === IDE support and the configuration reference
 
-The `micronaut-camel-components` module documents the `camel.main.*` options, Camel's other configuration groups, and the options of every Camel component, data format and language as `@ConfigurationProperties`, so IDEs complete them and they appear in the configuration reference:
+The `micronaut-camel-configuration` module documents the `camel.main.*` options and Camel's other configuration groups as `@ConfigurationProperties`, so IDEs complete them and they appear in the configuration reference:
 
-dependency:io.micronaut.camel:micronaut-camel-components[]
+dependency:io.micronaut.camel:micronaut-camel-configuration[]
 
-The classes are generated from the Camel catalog at build time. Camel itself still applies the options, so `micronaut-camel-components` is optional: the options work without it. It adds a configuration bean per component, data format and language, each only active when one of its options is set.
+The classes are generated from the Camel catalog at build time. Camel itself still applies the options, so the module is optional: the options work without it. The options of each component, data format and language are documented by its <<modules, Camel module>>.
 
 === Requiring a Camel component
 

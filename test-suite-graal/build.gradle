@@ -11,7 +11,7 @@ dependencies {
     testAnnotationProcessor(projects.micronautCamelProcessor)
     testImplementation(projects.micronautCamelCore)
     testImplementation(projects.micronautCamelTest)
-    testImplementation(projects.micronautCamelHttp)
+    testImplementation(projects.micronautCamelPlatformHttp)
     testImplementation(libs.camel.rest)
     testImplementation(mn.micronaut.http.server.netty)
     testImplementation(mn.micronaut.http.client)

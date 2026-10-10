@@ -1,6 +1,6 @@
-The `micronaut-camel-http` module serves Camel's https://camel.apache.org/components/next/platform-http-component.html[platform-http] component with the Micronaut HTTP server. Camel routes that consume from `platform-http:` endpoints, and the services of the https://camel.apache.org/manual/rest-dsl.html[REST DSL], are served on the port of the application, next to its controllers.
+The `micronaut-camel-platform-http` module serves Camel's https://camel.apache.org/components/next/platform-http-component.html[platform-http] component with the Micronaut HTTP server. Camel routes that consume from `platform-http:` endpoints, and the services of the https://camel.apache.org/manual/rest-dsl.html[REST DSL], are served on the port of the application, next to its controllers.
 
-dependency:io.micronaut.camel:micronaut-camel-http[]
+dependency:io.micronaut.camel:micronaut-camel-platform-http[]
 
 The application also needs a Micronaut HTTP server, such as the default Netty server:
 

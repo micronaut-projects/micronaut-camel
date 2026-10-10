@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.camel.components;
+package io.micronaut.camel.config;
 
-import io.micronaut.camel.config.CamelMainConfiguration;
+import io.micronaut.camel.components.seda.SedaComponentConfiguration;
 import io.micronaut.camel.requires.RequiresCamelKafka;
 import io.micronaut.camel.requires.RequiresCamelSeda;
 import io.micronaut.context.ApplicationContext;

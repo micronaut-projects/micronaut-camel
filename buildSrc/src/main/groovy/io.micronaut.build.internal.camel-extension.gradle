@@ -1,0 +1,68 @@
+/*
+ * The module of a Camel extension artifact, such as micronaut-camel-kafka for camel-kafka. The
+ * io.micronaut.build.internal.camel-extensions settings plugin creates these projects from the Camel
+ * catalog and applies this plugin to them.
+ */
+import io.micronaut.build.camel.GenerateCamelExtensionSources
+
+plugins {
+    id 'io.micronaut.build.internal.camel-module'
+}
+
+String artifactId = project.extensions.extraProperties.get('camelArtifact')
+Map<String, Object> extension = (gradle.extensions.extraProperties.get('camelExtensions') as Map)[artifactId] as Map
+String camelVersion = gradle.extensions.extraProperties.get('camelVersion')
+
+if (!project.description) {
+    project.description = "Micronaut integration of Camel ${extension.title}"
+}
+
+def generateSources = tasks.register('generateCamelExtensionSources', GenerateCamelExtensionSources) {
+    it.artifactId = artifactId
+    packageName = extension.packageName as String
+    title = extension.title as String
+    outputDirectory = layout.buildDirectory.dir('generated/sources/camel-extension/java')
+}
+
+sourceSets.main.java.srcDir(generateSources)
+
+if (artifactId == 'camel-jira') {
+    // the Jira client of camel-jira is only published to the Atlassian repository, which users of
+    // camel-jira add as well
+    repositories {
+        maven {
+            url = 'https://packages.atlassian.com/maven-external/'
+            content {
+                includeGroupByRegex('com\\.atlassian\\..*')
+                includeGroupByRegex('io\\.atlassian\\..*')
+            }
+        }
+    }
+}
+
+configurations.configureEach {
+    resolutionStrategy.capabilitiesResolution {
+        // camel-rocketmq has the relocated at.yawk.lz4:lz4-java and RocketMQ the original org.lz4:lz4-java
+        withCapability('org.lz4:lz4-java') {
+            selectHighestVersion()
+        }
+    }
+}
+
+def mn = versionCatalogs.named('mn')
+
+dependencies {
+    annotationProcessor(mn.findLibrary('micronaut-inject-java').get())
+    annotationProcessor(project(':micronaut-camel-processor'))
+
+    api(project(':micronaut-camel-core'))
+    api("org.apache.camel:${artifactId}:${camelVersion}")
+}
+
+// All modules go to Maven Central in one bundle: leave the fonts of JDK 23+ javadoc, 4 MB per
+// module, out of the javadoc jars of the hundreds of extension modules
+tasks.withType(Javadoc).configureEach {
+    if (javadocTool.get().metadata.languageVersion.asInt() >= 23) {
+        options.addBooleanOption('-no-fonts', true)
+    }
+}

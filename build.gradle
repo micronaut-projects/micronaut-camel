@@ -1,3 +1,15 @@
 plugins {
     id "io.micronaut.build.internal.parent"
 }
+
+// The reference of the Camel extension modules, which the guide includes from {includedir}
+def camelExtensionsReference = tasks.register('generateCamelExtensionsReference', io.micronaut.build.camel.GenerateCamelExtensionsReference) {
+    artifacts = gradle.extensions.extraProperties.get('camelExtensions') as Map
+    camelVersion = gradle.extensions.extraProperties.get('camelVersion') as String
+    groupId = providers.gradleProperty('projectGroup')
+    outputFile = layout.buildDirectory.file('working/01-includes/camelExtensions.adoc')
+}
+
+tasks.matching { it.name.startsWith('publishGuide') }.configureEach {
+    inputs.files(camelExtensionsReference)
+}

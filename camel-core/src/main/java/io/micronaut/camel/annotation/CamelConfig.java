@@ -69,6 +69,15 @@ public @interface CamelConfig {
     String[] include() default {};
 
     /**
+     * The Maven artifacts of the Camel extensions to generate code for, such as {@code camel-kafka}, all of
+     * them by default. An artifact may hold several extensions: {@code camel-http} has the {@code http}
+     * and {@code https} components.
+     *
+     * @return The artifact IDs
+     */
+    String[] artifacts() default {};
+
+    /**
      * The names of the Camel extensions to skip. {@code *} matches any characters.
      *
      * @return The name patterns

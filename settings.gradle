@@ -3,9 +3,13 @@ pluginManagement {
         gradlePluginPortal()
         mavenCentral()
     }
+    includeBuild('settings-build-logic')
 }
 
 plugins {
+    // a module per Camel extension artifact, from the Camel catalog: applied first, as the shared
+    // settings plugin renames the projects
+    id 'io.micronaut.build.internal.camel-extensions'
     id 'io.micronaut.build.shared.settings' version '8.1.4'
 }
 
@@ -18,9 +22,9 @@ dependencyResolutionManagement {
 rootProject.name = 'camel-parent'
 
 include 'camel-bom'
-include 'camel-components'
+include 'camel-configuration'
 include 'camel-core'
-include 'camel-http'
+include 'camel-platform-http'
 include 'camel-processor'
 include 'camel-test'
 

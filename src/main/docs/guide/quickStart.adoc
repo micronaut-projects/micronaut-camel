@@ -1,10 +1,8 @@
-Add the Micronaut Camel dependency to your build, together with the Camel components your routes use. The versions of the Camel artifacts come from the Micronaut Camel BOM:
+Add the <<modules, Camel modules>> of the components your routes use to your build. Each module brings `micronaut-camel-core` and the Camel component:
 
-dependency:io.micronaut.camel:micronaut-camel-core[]
+dependency:io.micronaut.camel:micronaut-camel-direct[]
 
-dependency:org.apache.camel:camel-direct[]
-
-dependency:org.apache.camel:camel-log[]
+dependency:io.micronaut.camel:micronaut-camel-log[]
 
 Write a route by extending `RouteBuilder` and making it a bean:
 
