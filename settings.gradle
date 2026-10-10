@@ -20,6 +20,7 @@ rootProject.name = 'camel-parent'
 include 'camel-bom'
 include 'camel-components'
 include 'camel-core'
+include 'camel-http'
 include 'camel-processor'
 include 'camel-test'
 
@@ -32,6 +33,7 @@ enableFeaturePreview 'TYPESAFE_PROJECT_ACCESSORS'
 micronautBuild {
     useStandardizedProjectNames = true
     importMicronautCatalog()
+    importMicronautCatalog("micronaut-servlet")
     importMicronautCatalog("micronaut-sourcegen")
     importMicronautCatalog("micronaut-cache")
     importMicronautCatalog("micronaut-serde")

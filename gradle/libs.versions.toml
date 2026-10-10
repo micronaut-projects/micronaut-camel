@@ -20,6 +20,7 @@ micronaut = "5.2.15"
 micronaut-docs = "3.0.0"
 micronaut-test = "5.2.0"
 micronaut-logging = "2.1.0"
+micronaut-servlet = "6.2.2"
 micronaut-sourcegen = "2.2.3"
 micronaut-cache = "6.1.1"
 micronaut-serde = "3.2.4"
@@ -33,6 +34,7 @@ managed-camel = "4.22.1"
 # Core
 micronaut-core = { module = 'io.micronaut:micronaut-core-bom', version.ref = 'micronaut' }
 micronaut-logging = { module = "io.micronaut.logging:micronaut-logging-bom", version.ref = "micronaut-logging" }
+micronaut-servlet = { module = "io.micronaut.servlet:micronaut-servlet-bom", version.ref = "micronaut-servlet" }
 micronaut-sourcegen = { module = "io.micronaut.sourcegen:micronaut-sourcegen-bom", version.ref = "micronaut-sourcegen" }
 micronaut-cache = { module = "io.micronaut.cache:micronaut-cache-bom", version.ref = "micronaut-cache" }
 micronaut-serde = { module = "io.micronaut.serde:micronaut-serde-bom", version.ref = "micronaut-serde" }
@@ -59,10 +61,17 @@ camel-endpointdsl = { module = "org.apache.camel:camel-endpointdsl" }
 camel-fhir = { module = "org.apache.camel:camel-fhir" }
 camel-file = { module = "org.apache.camel:camel-file" }
 camel-groovy = { module = "org.apache.camel:camel-groovy" }
+camel-http = { module = "org.apache.camel:camel-http" }
+camel-jackson = { module = "org.apache.camel:camel-jackson" }
 camel-jackson3 = { module = "org.apache.camel:camel-jackson3" }
 camel-log = { module = "org.apache.camel:camel-log" }
 camel-mock = { module = "org.apache.camel:camel-mock" }
+camel-openapi-java = { module = "org.apache.camel:camel-openapi-java" }
+camel-openapi-validator = { module = "org.apache.camel:camel-openapi-validator" }
+camel-platform-http = { module = "org.apache.camel:camel-platform-http" }
 camel-quartz = { module = "org.apache.camel:camel-quartz" }
+camel-rest = { module = "org.apache.camel:camel-rest" }
+camel-rest-openapi = { module = "org.apache.camel:camel-rest-openapi" }
 camel-seda = { module = "org.apache.camel:camel-seda" }
 camel-stream = { module = "org.apache.camel:camel-stream" }
 camel-timer = { module = "org.apache.camel:camel-timer" }

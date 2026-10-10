@@ -1,0 +1,16 @@
+# Ports openapi-contract-first/src/main/resources/application.properties
+camel:
+  main:
+    name: CamelPetStore
+  component:
+    rest-openapi:
+      base-path: /myapi
+      # camel-main creates the component to apply base-path, before the route sets the REST configuration,
+      # so the component does not see the binding package of the REST configuration
+      binding-package-scan: io.micronaut.camel.examples.openapicontractfirst.model
+
+petName: Tony the tiger
+
+micronaut:
+  server:
+    context-path: /myapp

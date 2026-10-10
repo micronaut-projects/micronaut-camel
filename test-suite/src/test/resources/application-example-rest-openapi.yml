@@ -1,0 +1,9 @@
+# Ports rest-openapi/src/main/resources/application.properties
+camel:
+  main:
+    name: MyCamel
+
+# the context path of the REST services, which the camel.servlet.mapping.context-path
+# of the servlet component set in the example
+api:
+  context-path: /api

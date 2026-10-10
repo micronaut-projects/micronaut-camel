@@ -14,6 +14,8 @@ integrations:
   title: Micronaut Integrations
 lifecycle:
   title: Lifecycle
+http:
+  title: HTTP and REST
 testing:
   title: Testing
 repository: Repository
