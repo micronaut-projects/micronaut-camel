@@ -41,6 +41,14 @@ class ConfigurationTest extends Specification {
         camelContext.getComponent('seda', SedaComponent).queueSize == 500
     }
 
+    @Inject
+    QueueMonitor queueMonitor
+
+    void 'beans can require a Camel component'() {
+        expect:
+        queueMonitor.queueSize() == 500
+    }
+
     void 'placeholders resolve from Micronaut configuration'() {
         expect:
         producerTemplate.requestBody('direct:welcome', 'Fred', String) == 'Bonjour Fred'

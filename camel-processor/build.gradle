@@ -1,0 +1,18 @@
+plugins {
+    id 'io.micronaut.build.internal.camel-module'
+}
+
+dependencies {
+    implementation(mn.micronaut.core.processor)
+    implementation(mnSourcegen.micronaut.sourcegen.generator)
+    implementation(platform(libs.boms.camel))
+    // the Camel catalog is the source of the generated configuration
+    implementation(libs.camel.catalog)
+
+    testImplementation(mn.micronaut.inject.java.test)
+    testImplementation(mnSourcegen.micronaut.sourcegen.generator.java)
+    testImplementation(projects.micronautCamelCore)
+    testImplementation(mnTest.junit.jupiter.api)
+    testRuntimeOnly(mnTest.junit.jupiter.engine)
+    testRuntimeOnly(mnTest.junit.platform.launcher)
+}

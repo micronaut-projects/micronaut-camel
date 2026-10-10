@@ -44,6 +44,11 @@ class ConfigurationTest {
     }
 
     @Test
+    void beansCanRequireACamelComponent(QueueMonitor queueMonitor) {
+        assertEquals(500, queueMonitor.queueSize());
+    }
+
+    @Test
     void placeholdersResolveFromMicronautConfiguration() {
         assertEquals("Bonjour Fred", producerTemplate.requestBody("direct:welcome", "Fred", String.class));
     }
