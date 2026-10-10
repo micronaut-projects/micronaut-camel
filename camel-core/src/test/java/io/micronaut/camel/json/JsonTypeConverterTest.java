@@ -16,18 +16,24 @@
 package io.micronaut.camel.json;
 
 import io.micronaut.context.annotation.Property;
+import io.micronaut.json.JsonMapper;
 import io.micronaut.serde.annotation.Serdeable;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.apache.camel.CamelContext;
 import org.apache.camel.TypeConversionException;
 import org.apache.camel.TypeConverter;
+import org.apache.camel.converter.stream.InputStreamCache;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
+import java.io.FilterInputStream;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -38,6 +44,9 @@ class JsonTypeConverterTest {
 
     @Inject
     CamelContext camelContext;
+
+    @Inject
+    JsonMapper jsonMapper;
 
     TypeConverter converter() {
         return camelContext.getTypeConverter();
@@ -71,6 +80,40 @@ class JsonTypeConverterTest {
     @Test
     void failsForInvalidJson() {
         assertThrows(TypeConversionException.class, () -> converter().convertTo(Book.class, "{\"title\":"));
+    }
+
+    @Test
+    void leavesStreamsThatAreNotJsonObjectsUnread() throws Exception {
+        JsonTypeConverter jsonConverter = new JsonTypeConverter(jsonMapper);
+        for (String content : List.of("<book><title>Camel</title></book>", "  [{\"title\":\"Camel\",\"pages\":100}]", "")) {
+            byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
+            ByteArrayInputStream in = new ByteArrayInputStream(bytes);
+
+            assertNull(jsonConverter.convertTo(Book.class, null, in), content);
+            // the other converters can still read the stream
+            assertArrayEquals(bytes, in.readAllBytes(), content);
+        }
+    }
+
+    @Test
+    void neverReadsAStreamItCannotReset() throws Exception {
+        JsonTypeConverter jsonConverter = new JsonTypeConverter(jsonMapper);
+        byte[] bytes = "{\"title\":\"Camel\",\"pages\":100}".getBytes(StandardCharsets.UTF_8);
+        InputStream in = new FilterInputStream(new ByteArrayInputStream(bytes)) {
+            @Override
+            public boolean markSupported() {
+                return false;
+            }
+        };
+
+        assertNull(jsonConverter.convertTo(Book.class, null, in));
+        assertArrayEquals(bytes, in.readAllBytes());
+    }
+
+    @Test
+    void convertsCachedStreams() {
+        byte[] bytes = "\n {\"title\":\"Camel\",\"pages\":100}".getBytes(StandardCharsets.UTF_8);
+        assertEquals(new Book("Camel", 100), converter().convertTo(Book.class, new InputStreamCache(bytes)));
     }
 
     @Serdeable

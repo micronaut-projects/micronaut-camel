@@ -23,6 +23,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 /**
  * Generates the JSON schema of the values of the Camel options that the catalog lists the possible values of,
@@ -32,6 +33,12 @@ import java.util.Map;
  * Camel, often {@code String}. The schema has the prefix of the class, so the Micronaut JSON Schema
  * configuration validator validates the values with both schemas; it accepts any other property, which the
  * schema of the class validates.
+ *
+ * <p>The values of an option of a Java enum type are matched as Camel's {@code EnumTypeConverter} matches
+ * them, ignoring case (and with {@code -} for {@code _}): such options have a {@code pattern} that ignores case,
+ * written with character classes, as the regular expressions of JSON Schema (ECMA-262) have no flag to ignore
+ * case, and list their values as {@code examples}. The other options, such as those of type {@code String},
+ * which Camel compares exactly, have an {@code enum}.</p>
  *
  * @author Graeme Rocher
  * @since 1.0.0
@@ -48,6 +55,9 @@ final class ValuesSchemaGenerator {
      */
     static final String SUFFIX = ".values.json";
 
+    // the characters to escape in a regular expression: escaping others is an error with the Unicode flag of ECMA-262
+    private static final String SYNTAX_CHARACTERS = "^$\\.*+?()[]{}|/";
+
     private ValuesSchemaGenerator() {
     }
 
@@ -55,9 +65,11 @@ final class ValuesSchemaGenerator {
      * @param className The name of the generated configuration class
      * @param prefix    Its prefix
      * @param options   The options of the class, by property name
+     * @param enumType  Whether a Java type, by name, is an enum
      * @return The schema, or {@code null} when no option has a list of values
      */
-    static @Nullable String schema(String className, String prefix, Map<String, ? extends BaseOptionModel> options) {
+    static @Nullable String schema(String className, String prefix, Map<String, ? extends BaseOptionModel> options,
+                                   Predicate<String> enumType) {
         Map<String, String> properties = new LinkedHashMap<>();
         options.forEach((name, option) -> {
             List<String> values = option.getEnums();
@@ -72,21 +84,26 @@ final class ValuesSchemaGenerator {
             boolean list = "array".equals(option.getType()) || javaType.startsWith("java.util.List")
                 || javaType.startsWith("java.util.Set") || javaType.startsWith("java.util.Collection");
             String valueType = "integer".equals(option.getType()) || "number".equals(option.getType()) ? option.getType() : "string";
+            String elementType = list ? elementType(javaType) : javaType;
+            boolean ignoreCase = "string".equals(valueType) && !elementType.isEmpty() && enumType.test(elementType);
             StringBuilder schema = new StringBuilder("{");
-            StringBuilder enumSchema = new StringBuilder();
-            enumSchema.append("\"type\":").append(string(valueType)).append(",\"enum\":[");
-            for (int i = 0; i < values.size(); i++) {
-                if (i > 0) {
-                    enumSchema.append(',');
-                }
-                enumSchema.append(value(values.get(i), valueType));
+            StringBuilder valuesSchema = new StringBuilder();
+            valuesSchema.append("\"type\":").append(string(valueType));
+            if (ignoreCase) {
+                // Camel converts the text to the enum constant ignoring case
+                valuesSchema.append(",\"pattern\":").append(string(ignoreCasePattern(values)))
+                    .append(",\"examples\":").append(array(values, valueType));
+            } else {
+                valuesSchema.append(",\"enum\":").append(array(values, valueType));
             }
-            enumSchema.append(']');
             if (list) {
                 // a comma separated list of values, or a list
-                schema.append("\"anyOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"items\":{").append(enumSchema).append("}}]");
+                schema.append("\"anyOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"items\":{").append(valuesSchema).append("}}]");
             } else {
-                schema.append(enumSchema);
+                schema.append(valuesSchema);
+            }
+            if (ignoreCase) {
+                schema.append(",\"description\":").append(string("One of " + String.join(", ", values) + ", ignoring case."));
             }
             schema.append(",\"x-micronaut-path\":").append(string(prefix + "." + property)).append('}');
             properties.put(property, schema.toString());
@@ -112,6 +129,63 @@ final class ValuesSchemaGenerator {
         }
         // the other options are those of the schema of the class: unknown options are reported for that one only
         return json.append("},\"additionalProperties\":{}}").toString();
+    }
+
+    /**
+     * @param javaType The Java type of an option, such as {@code java.util.List<org.apache.camel.LoggingLevel>}
+     * @return The type of its elements, without type arguments, or an empty string when it has none
+     */
+    static String elementType(String javaType) {
+        int start = javaType.indexOf('<');
+        int end = javaType.lastIndexOf('>');
+        if (start < 0 || end < start) {
+            return "";
+        }
+        String argument = javaType.substring(start + 1, end).trim();
+        return argument.indexOf('<') >= 0 || argument.indexOf(',') >= 0 ? "" : argument;
+    }
+
+    /**
+     * A regular expression matching the values ignoring case, as Camel's {@code EnumTypeConverter}, written
+     * with a character class per letter (such as {@code [Ii][Nn][Ff][Oo]}), which every regular expression
+     * dialect of JSON Schema supports. An underscore also matches a dash, as Camel converts {@code json-xml}
+     * to {@code JSON_XML}.
+     *
+     * @param values The values
+     * @return The pattern
+     */
+    static String ignoreCasePattern(List<String> values) {
+        StringBuilder pattern = new StringBuilder("^(?:");
+        for (int i = 0; i < values.size(); i++) {
+            if (i > 0) {
+                pattern.append('|');
+            }
+            for (char c : values.get(i).toCharArray()) {
+                char upper = Character.toUpperCase(c);
+                char lower = Character.toLowerCase(c);
+                if (upper != lower) {
+                    pattern.append('[').append(upper).append(lower).append(']');
+                } else if (c == '_' || c == '-') {
+                    pattern.append("[_-]");
+                } else if (SYNTAX_CHARACTERS.indexOf(c) >= 0) {
+                    pattern.append('\\').append(c);
+                } else {
+                    pattern.append(c);
+                }
+            }
+        }
+        return pattern.append(")$").toString();
+    }
+
+    private static String array(List<String> values, String type) {
+        StringBuilder array = new StringBuilder("[");
+        for (int i = 0; i < values.size(); i++) {
+            if (i > 0) {
+                array.append(',');
+            }
+            array.append(value(values.get(i), type));
+        }
+        return array.append(']').toString();
     }
 
     private static String value(String value, String type) {

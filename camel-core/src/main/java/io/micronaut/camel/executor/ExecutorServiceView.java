@@ -17,6 +17,9 @@ package io.micronaut.camel.executor;
 
 import io.micronaut.core.annotation.Internal;
 import org.apache.camel.util.concurrent.ThreadPoolRejectedPolicy;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -25,6 +28,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -33,10 +37,14 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * A Camel thread pool whose tasks run on a shared Micronaut executor.
  *
- * <p>The pool keeps the limits of its Camel thread pool profile: at most {@code maxConcurrency} of its
- * tasks run at a time, the others wait in a queue of {@code queueCapacity} tasks, in order, and the
- * tasks that do not fit are rejected with the rejected policy of the profile. Camel shuts the pool down
- * when the route or the context stops: that stops the pool, never the Micronaut executor.</p>
+ * <p>The pool keeps the limits of its Camel thread pool profile, as a JDK {@code ThreadPoolExecutor} does: up
+ * to {@code corePoolSize} of its tasks run at a time, the others wait in a queue of {@code queueCapacity} tasks,
+ * in order, and only when the queue is full do more tasks run at a time, up to {@code maxPoolSize}; the tasks
+ * that do not fit then are rejected with the rejected policy of the profile. A queue capacity of 0 hands the
+ * tasks off, as a {@code SynchronousQueue}. Each running task of the pool is a worker on the Micronaut
+ * executor, which runs the waiting tasks after its own, as the threads of a JDK thread pool do, so the tasks
+ * of a pool of one run one after the other. Camel shuts the pool down when the route or the context stops:
+ * that stops the pool, never the Micronaut executor.</p>
  *
  * @author Graeme Rocher
  * @since 1.0.0
@@ -44,9 +52,12 @@ import java.util.concurrent.locks.ReentrantLock;
 @Internal
 final class ExecutorServiceView extends AbstractExecutorService {
 
+    private static final Logger LOG = LoggerFactory.getLogger(ExecutorServiceView.class);
+
     private final String executorName;
     private final ExecutorService executor;
-    private final int maxConcurrency;
+    private final int corePoolSize;
+    private final int maxPoolSize;
     private final int queueCapacity;
     private final ThreadPoolRejectedPolicy rejectedPolicy;
     private final ReentrantLock lock = new ReentrantLock();
@@ -61,36 +72,44 @@ final class ExecutorServiceView extends AbstractExecutorService {
     /**
      * @param executorName   The name of the Micronaut executor
      * @param executor       The Micronaut executor
-     * @param maxConcurrency The maximum number of tasks running at a time
-     * @param queueCapacity  The maximum number of waiting tasks
+     * @param corePoolSize   The number of tasks that run at a time before tasks wait in the queue
+     * @param maxPoolSize    The maximum number of tasks running at a time, once the queue is full
+     * @param queueCapacity  The maximum number of waiting tasks, 0 to hand the tasks off
      * @param rejectedPolicy What to do with the tasks that do not fit
      */
-    ExecutorServiceView(String executorName, ExecutorService executor, int maxConcurrency, int queueCapacity,
+    ExecutorServiceView(String executorName, ExecutorService executor, int corePoolSize, int maxPoolSize, int queueCapacity,
                         ThreadPoolRejectedPolicy rejectedPolicy) {
         this.executorName = executorName;
         this.executor = executor;
-        this.maxConcurrency = Math.max(1, maxConcurrency);
+        this.corePoolSize = Math.max(1, corePoolSize);
+        this.maxPoolSize = Math.max(this.corePoolSize, maxPoolSize);
         this.queueCapacity = Math.max(0, queueCapacity);
         this.rejectedPolicy = rejectedPolicy;
     }
 
     @Override
     public void execute(Runnable task) {
-        boolean slot = false;
+        boolean worker = false;
         lock.lock();
         try {
             while (true) {
                 if (shutdown) {
                     throw new RejectedExecutionException("The Camel thread pool on the Micronaut executor '" + executorName + "' is shut down");
                 }
-                if (running < maxConcurrency) {
+                if (running < corePoolSize) {
                     running++;
-                    slot = true;
+                    worker = true;
                     break;
                 }
                 if (queue.size() < queueCapacity) {
                     queue.add(task);
                     return;
+                }
+                if (running < maxPoolSize) {
+                    // the queue is full: grow, as a JDK thread pool
+                    running++;
+                    worker = true;
+                    break;
                 }
                 if (rejectedPolicy != ThreadPoolRejectedPolicy.Block) {
                     break;
@@ -100,41 +119,71 @@ final class ExecutorServiceView extends AbstractExecutorService {
         } finally {
             lock.unlock();
         }
-        if (slot) {
-            dispatch(task);
-        } else if (rejectedPolicy == ThreadPoolRejectedPolicy.CallerRuns) {
-            task.run();
+        if (worker) {
+            startWorker(task);
         } else {
-            throw new RejectedExecutionException("The Camel thread pool on the Micronaut executor '" + executorName
-                + "' is full: " + maxConcurrency + " running and " + queueCapacity + " waiting tasks");
+            reject(task, null);
         }
     }
 
-    private void dispatch(Runnable task) {
+    private void startWorker(Runnable task) {
         try {
-            executor.execute(() -> run(task));
+            executor.execute(() -> work(task));
         } catch (RuntimeException e) {
-            release();
-            throw e;
+            // the Micronaut executor no longer accepts tasks, for example as it shuts down
+            List<Runnable> stranded = release(true);
+            try {
+                reject(task, e);
+            } finally {
+                stranded.forEach(this::rejectWaiting);
+            }
         }
     }
 
-    private void run(Runnable task) {
-        Thread thread = Thread.currentThread();
-        lock.lock();
-        try {
-            if (stopped) {
-                release();
-                return;
-            }
-            threads.add(thread);
-        } finally {
-            lock.unlock();
-        }
-        try {
+    private void reject(Runnable task, @Nullable RuntimeException cause) {
+        if (rejectedPolicy == ThreadPoolRejectedPolicy.CallerRuns) {
             task.run();
-        } finally {
-            Runnable next;
+            return;
+        }
+        throw new RejectedExecutionException(cause != null
+            ? "The Micronaut executor '" + executorName + "' of the Camel thread pool rejected the task: " + cause.getMessage()
+            : "The Camel thread pool on the Micronaut executor '" + executorName + "' is full: " + maxPoolSize + " running and "
+                + queueCapacity + " waiting tasks", cause);
+    }
+
+    /**
+     * Rejects a waiting task that no worker can run, as the Micronaut executor rejected the worker: the task
+     * runs in the current thread with the {@code CallerRuns} policy, and is cancelled otherwise, so that no
+     * caller waits for it forever.
+     */
+    private void rejectWaiting(Runnable task) {
+        if (rejectedPolicy == ThreadPoolRejectedPolicy.CallerRuns) {
+            runTask(task);
+        } else if (task instanceof Future<?> future) {
+            future.cancel(false);
+        } else {
+            LOG.warn("Dropped a waiting task of the Camel thread pool on the Micronaut executor '{}', which rejects new tasks", executorName);
+        }
+    }
+
+    /**
+     * Runs a task, and then the waiting tasks, as a thread of a JDK thread pool does.
+     */
+    private void work(Runnable first) {
+        Thread thread = Thread.currentThread();
+        Runnable task = first;
+        while (task != null) {
+            lock.lock();
+            try {
+                threads.add(thread);
+                if (stopped) {
+                    // as a JDK thread pool, which interrupts the tasks it runs once stopped
+                    thread.interrupt();
+                }
+            } finally {
+                lock.unlock();
+            }
+            runTask(task);
             lock.lock();
             try {
                 threads.remove(thread);
@@ -142,30 +191,48 @@ final class ExecutorServiceView extends AbstractExecutorService {
                     // shutdownNow may have interrupted the thread, which belongs to the Micronaut executor
                     Thread.interrupted();
                 }
-                next = queue.poll();
-                if (next != null) {
+                // the worker keeps its slot for the next waiting task, so the tasks of a pool of one run in order
+                task = queue.poll();
+                if (task != null) {
                     room.signal();
+                } else {
+                    release(false);
                 }
             } finally {
                 lock.unlock();
             }
-            if (next != null) {
-                // the next task keeps the slot, so the tasks of a pool of one run in order
-                dispatch(next);
-            } else {
-                release();
-            }
         }
     }
 
-    private void release() {
+    private void runTask(Runnable task) {
+        try {
+            task.run();
+        } catch (Throwable e) {
+            // the worker goes on with the waiting tasks, where a JDK thread pool replaces its thread
+            LOG.warn("A task of the Camel thread pool on the Micronaut executor '{}' failed: {}", executorName, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Releases the slot of a worker.
+     *
+     * @param failed Whether the worker could not start
+     * @return The waiting tasks that no worker is left to run
+     */
+    private List<Runnable> release(boolean failed) {
         lock.lock();
         try {
             running--;
-            room.signal();
+            room.signalAll();
+            List<Runnable> stranded = List.of();
+            if (failed && running == 0 && !queue.isEmpty()) {
+                stranded = new ArrayList<>(queue);
+                queue.clear();
+            }
             if (running == 0) {
                 idle.signalAll();
             }
+            return stranded;
         } finally {
             lock.unlock();
         }
@@ -237,7 +304,7 @@ final class ExecutorServiceView extends AbstractExecutorService {
 
     @Override
     public String toString() {
-        return "Camel thread pool on the Micronaut executor '" + executorName + "' (" + maxConcurrency + " running, "
-            + queueCapacity + " waiting tasks at most)";
+        return "Camel thread pool on the Micronaut executor '" + executorName + "' (" + corePoolSize + " to " + maxPoolSize
+            + " running and " + queueCapacity + " waiting tasks at most)";
     }
 }

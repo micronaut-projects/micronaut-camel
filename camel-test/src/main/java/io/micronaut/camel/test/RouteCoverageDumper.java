@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 
 /**
@@ -116,6 +117,31 @@ final class RouteCoverageDumper extends EventNotifierSupport {
     }
 
     /**
+     * The name of the file of a test: the characters other than letters, digits, {@code .}, {@code _}, {@code -}
+     * and the {@code $} of nested class names become {@code _}, as the names of Spock features and of
+     * parameterized tests may have any character, such as {@code /} or {@code :}.
+     *
+     * @param testClass  The name of the test class
+     * @param testMethod The name of the test method that ran last, if any
+     * @return The file name
+     */
+    static String fileName(String testClass, @Nullable String testMethod) {
+        String name = testMethod != null ? testClass + "-" + testMethod : testClass;
+        StringBuilder fileName = new StringBuilder(name.length() + 4);
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            boolean safe = c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9'
+                || c == '.' || c == '_' || c == '-' || c == '$';
+            fileName.append(safe ? c : '_');
+        }
+        return fileName.append(".xml").toString();
+    }
+
+    private static String escape(String text) {
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    /**
      * Writes the route coverage of the Camel context.
      *
      * @param camelContext The Camel context
@@ -131,17 +157,19 @@ final class RouteCoverageDumper extends EventNotifierSupport {
             return null;
         }
         String method = testMethod;
-        StringBuilder xml = new StringBuilder("<camelRouteCoverage>\n<test>\n  <class>").append(testClass).append("</class>\n");
+        StringBuilder xml = new StringBuilder("<camelRouteCoverage>\n<test>\n  <class>").append(escape(testClass)).append("</class>\n");
         if (method != null) {
-            xml.append("  <method>").append(method).append("</method>\n");
+            xml.append("  <method>").append(escape(method)).append("</method>\n");
         }
         xml.append("</test>\n").append(mbean.dumpRoutesCoverageAsXml()).append("\n</camelRouteCoverage>\n");
-        Path file = directory.resolve(method != null ? testClass + "-" + method + ".xml" : testClass + ".xml");
+        String fileName = fileName(testClass, method);
+        Path file;
         try {
+            file = directory.resolve(fileName);
             Files.createDirectories(directory);
             Files.writeString(file, xml, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            LOG.warn("Cannot dump the route coverage of {} to {}: {}", testClass, file, e.getMessage(), e);
+        } catch (IOException | InvalidPathException e) {
+            LOG.warn("Cannot dump the route coverage of {} to {} in {}: {}", testClass, fileName, directory, e.getMessage(), e);
             return null;
         }
         LOG.info("Dumped the route coverage of {} to {}", testClass, file);

@@ -47,8 +47,12 @@ import java.util.stream.Collectors;
  * executor named by {@code micronaut.camel.executors.default-executor}, {@code blocking} by default, and
  * the thread pools of a Camel thread pool profile on the executor that
  * {@code micronaut.camel.executors.profiles.<profile id>} names. The name {@code camel} keeps Camel's own
- * thread pools. A thread pool keeps the limits of its profile: its pool size, queue size and rejected
- * policy. Scheduled thread pools, such as those of timers and polling consumers, stay Camel's.</p>
+ * thread pools. A thread pool keeps the limits of its profile with the semantics of a JDK thread pool: its pool
+ * size, queue size, maximum pool size (once the queue is full) and rejected policy. Scheduled thread pools, such
+ * as those of timers and polling consumers, stay Camel's.</p>
+ *
+ * <p>Camel runs long-running tasks on these pools, such as the consumer loops of {@code seda} and the waits of
+ * the {@code Block} rejected policy, so the Micronaut executor should be unbounded or elastic.</p>
  *
  * @author Graeme Rocher
  * @since 1.0.0
@@ -105,7 +109,8 @@ public final class MicronautThreadPoolFactory implements ThreadPoolFactory {
         if (CAMEL.equals(defaultExecutor)) {
             return camelThreadPools.newCachedThreadPool(threadFactory);
         }
-        return new ExecutorServiceView(defaultExecutor, executor(defaultExecutor), Integer.MAX_VALUE, 0,
+        // as a JDK cached thread pool: every task runs at once
+        return new ExecutorServiceView(defaultExecutor, executor(defaultExecutor), Integer.MAX_VALUE, Integer.MAX_VALUE, 0,
             ThreadPoolRejectedPolicy.Abort);
     }
 
@@ -115,14 +120,17 @@ public final class MicronautThreadPoolFactory implements ThreadPoolFactory {
         if (CAMEL.equals(name)) {
             return camelThreadPools.newThreadPool(profile, threadFactory);
         }
+        // the semantics of Camel's thread pools, which are JDK thread pools: poolSize tasks run at a time, the
+        // others wait in the queue, and the pool grows up to maxPoolSize only when the queue is full
         int poolSize = positive(profile.getPoolSize(), 1);
-        int maxConcurrency = Math.max(poolSize, positive(profile.getMaxPoolSize(), poolSize));
+        int maxPoolSize = Math.max(poolSize, positive(profile.getMaxPoolSize(), poolSize));
         Integer maxQueueSize = profile.getMaxQueueSize();
-        // as for Camel's thread pools: no queue for 0, an unbounded queue for a negative size
-        int queueCapacity = maxQueueSize == null || maxQueueSize < 0 ? Integer.MAX_VALUE : maxQueueSize;
-        ThreadPoolRejectedPolicy policy = profile.getRejectedPolicy() != null ? profile.getRejectedPolicy() : ThreadPoolRejectedPolicy.Abort;
+        // as Camel's thread pools: a queue of maxQueueSize tasks, and no queue (a SynchronousQueue) for 0 or less
+        int queueCapacity = maxQueueSize == null ? Integer.MAX_VALUE : Math.max(0, maxQueueSize);
+        // Camel's thread pools default to CallerRuns too
+        ThreadPoolRejectedPolicy policy = profile.getRejectedPolicy() != null ? profile.getRejectedPolicy() : ThreadPoolRejectedPolicy.CallerRuns;
         LOG.debug("Camel thread pool {} runs on the Micronaut executor {}", profile.getId(), name);
-        return new ExecutorServiceView(name, executor(name), maxConcurrency, queueCapacity, policy);
+        return new ExecutorServiceView(name, executor(name), poolSize, maxPoolSize, queueCapacity, policy);
     }
 
     @Override

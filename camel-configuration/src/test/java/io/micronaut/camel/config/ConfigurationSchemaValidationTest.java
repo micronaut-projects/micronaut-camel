@@ -48,6 +48,17 @@ class ConfigurationSchemaValidationTest {
     }
 
     @Test
+    void acceptsTheValuesOfEnumOptionsInAnyCase() {
+        // Camel converts the text to the enum constant ignoring case
+        assertEquals(Map.of(), validate(Map.of(
+            "camel.main.bean-introspection-logging-level", "info",
+            "camel.main.jmx-management-statistics-level", "routesonly",
+            "camel.component.bean.scope", "PROTOTYPE",
+            "camel.rest.binding-mode", "JSON_XML"
+        )));
+    }
+
+    @Test
     void reportsUnknownOptions() {
         Map<String, String> errors = validate(Map.of(
             "camel.component.seda.queue-sise", 500,
@@ -64,13 +75,17 @@ class ConfigurationSchemaValidationTest {
         Map<String, String> errors = validate(Map.of(
             "camel.component.seda.queue-size", "lots",
             "camel.component.bean.scope", "Session",
-            "camel.main.jmx-management-statistics-level", "All"
+            "camel.main.jmx-management-statistics-level", "All",
+            "camel.main.bean-introspection-logging-level", "LOUD",
+            "camel.main.uuid-generator", "random"
         ));
 
         assertEquals(Map.of(
             "camel.component.seda.queue-size", "Expected integer",
-            "camel.component.bean.scope", "Value not in enum. Expected one of: 'Singleton', 'Request', 'Prototype'",
-            "camel.main.jmx-management-statistics-level", "Value not in enum. Expected one of: 'Extended', 'Default', 'RoutesOnly', 'Off'"
+            "camel.component.bean.scope", "Value does not match pattern",
+            "camel.main.jmx-management-statistics-level", "Value does not match pattern",
+            "camel.main.bean-introspection-logging-level", "Value does not match pattern",
+            "camel.main.uuid-generator", "Value not in enum. Expected one of: 'classic', 'default', 'short', 'simple', 'off'"
         ), errors);
     }
 

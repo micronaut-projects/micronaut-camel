@@ -28,13 +28,24 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.ThreadPoolProfileBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.spi.ThreadPoolProfile;
+import org.apache.camel.util.concurrent.ThreadPoolRejectedPolicy;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @MicronautTest
@@ -105,6 +116,73 @@ class MicronautExecutorsTest {
         done.assertIsSatisfied();
         Thread thread = threads.of("legacy");
         assertTrue(thread.getName().startsWith("Camel ("), thread::getName);
+    }
+
+    @Test
+    void aPoolOfOneThreadRunsItsTasksOneAfterTheOther() throws Exception {
+        // Camel fills the unset values of a profile from the default profile: a maximum pool size of 20 and a
+        // queue of 1000 tasks, so the pool grows only once 1000 tasks wait, as with a JDK thread pool
+        ExecutorService pool = camelContext.getExecutorServiceManager()
+            .newThreadPool(this, "sequential", new ThreadPoolProfileBuilder("sequential").poolSize(1).build());
+        try {
+            AtomicInteger current = new AtomicInteger();
+            AtomicInteger max = new AtomicInteger();
+            List<Integer> order = new CopyOnWriteArrayList<>();
+            for (int i = 0; i < 30; i++) {
+                int task = i;
+                pool.execute(() -> {
+                    max.accumulateAndGet(current.incrementAndGet(), Math::max);
+                    sleep(2);
+                    order.add(task);
+                    current.decrementAndGet();
+                });
+            }
+            pool.shutdown();
+            assertTrue(pool.awaitTermination(10, TimeUnit.SECONDS));
+            assertEquals(1, max.get());
+            assertEquals(IntStream.range(0, 30).boxed().toList(), order);
+        } finally {
+            camelContext.getExecutorServiceManager().shutdownNow(pool);
+        }
+    }
+
+    @Test
+    void aPoolWithoutAQueueHandsItsTasksOffOrRejectsThem() throws Exception {
+        // as Camel's thread pools: a SynchronousQueue for a maximum queue size of 0 or less, not an unbounded queue
+        ExecutorService pool = camelContext.getExecutorServiceManager().newThreadPool(this, "handoff",
+            new ThreadPoolProfileBuilder("handoff").poolSize(1).maxPoolSize(2).maxQueueSize(-1)
+                .rejectedPolicy(ThreadPoolRejectedPolicy.Abort).build());
+        CountDownLatch release = new CountDownLatch(1);
+        CountDownLatch started = new CountDownLatch(2);
+        try {
+            for (int i = 0; i < 2; i++) {
+                pool.execute(() -> {
+                    started.countDown();
+                    await(release);
+                });
+            }
+            assertTrue(started.await(10, TimeUnit.SECONDS));
+            assertThrows(RejectedExecutionException.class, () -> pool.execute(() -> { }));
+        } finally {
+            release.countDown();
+            camelContext.getExecutorServiceManager().shutdownNow(pool);
+        }
+    }
+
+    private static void sleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private static void await(CountDownLatch latch) {
+        try {
+            latch.await(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     @Singleton

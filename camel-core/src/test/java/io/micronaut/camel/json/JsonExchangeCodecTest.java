@@ -21,6 +21,7 @@ import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExchangePropertyKey;
 import org.apache.camel.support.DefaultExchange;
 import org.junit.jupiter.api.Test;
 
@@ -130,6 +131,41 @@ class JsonExchangeCodecTest {
     void failsForABodyThatCannotBeStored() {
         Exchange exchange = new DefaultExchange(camelContext);
         exchange.getMessage().setBody(new Object());
+
+        assertThrows(IOException.class, () -> codec.encode(exchange, false));
+    }
+
+    @Test
+    void storesTheGroupedExchangesOfListAggregationStrategies() throws IOException {
+        Exchange exchange = new DefaultExchange(camelContext);
+        exchange.getMessage().setBody(new Order("book", 1));
+        Exchange first = new DefaultExchange(camelContext);
+        first.getMessage().setBody(new Order("book", 1));
+        first.getMessage().setHeader("basket", "a");
+        Exchange second = new DefaultExchange(camelContext);
+        second.getMessage().setBody("pen");
+        exchange.setProperty(ExchangePropertyKey.GROUPED_EXCHANGE, new ArrayList<>(List.of(first, second)));
+
+        Exchange restored = codec.decode(camelContext, codec.encode(exchange, false));
+
+        List<?> grouped = restored.getProperty(ExchangePropertyKey.GROUPED_EXCHANGE, List.class);
+        assertEquals(2, grouped.size());
+        Exchange restoredFirst = assertInstanceOf(Exchange.class, grouped.get(0));
+        assertEquals(first.getExchangeId(), restoredFirst.getExchangeId());
+        assertEquals(new Order("book", 1), restoredFirst.getMessage().getBody());
+        assertEquals("a", restoredFirst.getMessage().getHeader("basket"));
+        assertEquals("pen", assertInstanceOf(Exchange.class, grouped.get(1)).getMessage().getBody());
+
+        exchange.setProperty(ExchangePropertyKey.GROUPED_EXCHANGE, new ArrayList<>(List.of(new Order("pen", 2), "cup")));
+        restored = codec.decode(camelContext, codec.encode(exchange, false));
+        assertEquals(List.of(new Order("pen", 2), "cup"), restored.getProperty(ExchangePropertyKey.GROUPED_EXCHANGE, List.class));
+    }
+
+    @Test
+    void failsForGroupedBodiesThatCannotBeStored() {
+        Exchange exchange = new DefaultExchange(camelContext);
+        exchange.getMessage().setBody("book");
+        exchange.setProperty(ExchangePropertyKey.GROUPED_EXCHANGE, new ArrayList<>(List.of("book", new Object())));
 
         assertThrows(IOException.class, () -> codec.encode(exchange, false));
     }

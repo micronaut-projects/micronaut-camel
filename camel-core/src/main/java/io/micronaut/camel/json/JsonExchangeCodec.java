@@ -24,6 +24,7 @@ import jakarta.inject.Singleton;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExchangePropertyKey;
 import org.apache.camel.Message;
 import org.apache.camel.support.DefaultExchange;
 import org.jspecify.annotations.Nullable;
@@ -78,8 +79,11 @@ import java.util.function.Supplier;
  * </ul>
  *
  * <p>Other types are never instantiated from the stored type names. The codec stores the exchange ID, the
- * body, the headers and the aggregation properties, like Camel's own codecs. Headers whose values cannot
- * be stored are left out, and a body that cannot be stored fails.</p>
+ * body, the headers and the aggregation properties, like Camel's own codecs, and the list that the list
+ * aggregation strategies of Camel, such as {@code AggregationStrategies.groupedBody()} and
+ * {@code groupedExchange()}, keep in the {@code CamelGroupedExchange} property: the grouped bodies, or the
+ * grouped exchanges with their ID, body and headers. Headers whose values cannot be stored are left out,
+ * and a body (or grouped body) that cannot be stored fails.</p>
  *
  * @author Graeme Rocher
  * @since 1.0.0
@@ -100,6 +104,10 @@ public class JsonExchangeCodec {
     private static final String VALUE = "value";
     private static final String ITEMS = "items";
     private static final String ENTRIES = "entries";
+    private static final String EXCHANGE = "exchange";
+    private static final String EXCHANGE_TYPE = Exchange.class.getName();
+    // the list of the grouped bodies or exchanges of AggregationStrategies.groupedBody() and groupedExchange()
+    private static final String GROUPED_EXCHANGE = ExchangePropertyKey.GROUPED_EXCHANGE.getName();
 
     private static final List<String> AGGREGATION_PROPERTIES = List.of(
         Exchange.AGGREGATED_SIZE,
@@ -213,6 +221,36 @@ public class JsonExchangeCodec {
     }
 
     private JsonNode toTree(Exchange exchange, boolean allHeaders) throws IOException {
+        Map<String, JsonNode> root = writeMessage(exchange, allHeaders);
+        Map<String, Object> properties = new LinkedHashMap<>();
+        for (String property : AGGREGATION_PROPERTIES) {
+            Object value = exchange.getProperty(property);
+            if (value != null) {
+                properties.put(property, value);
+            }
+        }
+        JsonNode propertiesNode = writeEntries(properties, false, "property");
+        Object grouped = exchange.getProperty(GROUPED_EXCHANGE);
+        if (grouped != null) {
+            Map<String, JsonNode> entries = new LinkedHashMap<>();
+            propertiesNode.entries().forEach(entry -> entries.put(entry.getKey(), entry.getValue()));
+            entries.put(GROUPED_EXCHANGE, writeGrouped(grouped, allHeaders));
+            propertiesNode = JsonNode.createObjectNode(entries);
+        }
+        if (propertiesNode.size() > 0) {
+            root.put(PROPERTIES, propertiesNode);
+        }
+        Endpoint from = exchange.getFromEndpoint();
+        if (from != null) {
+            root.put(FROM_ENDPOINT, JsonNode.createStringNode(from.getEndpointUri()));
+        }
+        return JsonNode.createObjectNode(root);
+    }
+
+    /**
+     * Writes the exchange ID, the body and the headers of an exchange.
+     */
+    private Map<String, JsonNode> writeMessage(Exchange exchange, boolean allHeaders) throws IOException {
         Map<String, JsonNode> root = new LinkedHashMap<>();
         root.put(EXCHANGE_ID, JsonNode.createStringNode(exchange.getExchangeId()));
         Message message = exchange.getMessage();
@@ -226,21 +264,33 @@ public class JsonExchangeCodec {
         if (message.hasHeaders()) {
             root.put(HEADERS, writeEntries(message.getHeaders(), allHeaders, "header"));
         }
-        Map<String, Object> properties = new LinkedHashMap<>();
-        for (String property : AGGREGATION_PROPERTIES) {
-            Object value = exchange.getProperty(property);
-            if (value != null) {
-                properties.put(property, value);
+        return root;
+    }
+
+    /**
+     * Writes the list of the grouped bodies (stored like a body) or exchanges (stored with their ID, body and
+     * headers) of Camel's list aggregation strategies, which fails like a body that cannot be stored.
+     */
+    private JsonNode writeGrouped(Object grouped, boolean allHeaders) throws IOException {
+        if (!(grouped instanceof List<?> list)) {
+            throw new IOException("The grouped exchanges of type " + grouped.getClass().getName() + " cannot be stored as JSON");
+        }
+        List<JsonNode> items = new ArrayList<>(list.size());
+        for (Object item : list) {
+            JsonNode node;
+            if (item instanceof Exchange exchange) {
+                node = JsonNode.createObjectNode(Map.of(TYPE, JsonNode.createStringNode(EXCHANGE_TYPE),
+                    EXCHANGE, JsonNode.createObjectNode(writeMessage(exchange, allHeaders))));
+            } else {
+                node = write(item, true);
+                if (node == null) {
+                    throw new IOException("The grouped body of type " + item.getClass().getName() + " cannot be stored as JSON: "
+                        + "use a JDK value type, a collection or a type introspected for serialization, such as a @Serdeable type");
+                }
             }
+            items.add(node);
         }
-        if (!properties.isEmpty()) {
-            root.put(PROPERTIES, writeEntries(properties, false, "property"));
-        }
-        Endpoint from = exchange.getFromEndpoint();
-        if (from != null) {
-            root.put(FROM_ENDPOINT, JsonNode.createStringNode(from.getEndpointUri()));
-        }
-        return JsonNode.createObjectNode(root);
+        return JsonNode.createObjectNode(Map.of(TYPE, JsonNode.createStringNode(ArrayList.class.getName()), ITEMS, JsonNode.createArrayNode(items)));
     }
 
     private JsonNode writeEntries(Map<String, Object> values, boolean allTypes, String kind) {
@@ -316,23 +366,11 @@ public class JsonExchangeCodec {
         if (!root.isObject()) {
             throw new IOException("Not an exchange written by " + JsonExchangeCodec.class.getSimpleName());
         }
-        Exchange exchange = new DefaultExchange(camelContext);
-        JsonNode exchangeId = root.get(EXCHANGE_ID);
-        if (exchangeId != null && exchangeId.isString()) {
-            exchange.setExchangeId(exchangeId.getStringValue());
-        }
-        Message message = exchange.getMessage();
-        message.setBody(read(root.get(BODY)));
-        JsonNode headers = root.get(HEADERS);
-        if (headers != null) {
-            for (Map.Entry<String, JsonNode> entry : headers.entries()) {
-                message.setHeader(entry.getKey(), read(entry.getValue()));
-            }
-        }
+        Exchange exchange = readMessage(camelContext, root);
         JsonNode properties = root.get(PROPERTIES);
         if (properties != null) {
             for (Map.Entry<String, JsonNode> entry : properties.entries()) {
-                exchange.setProperty(entry.getKey(), read(entry.getValue()));
+                exchange.setProperty(entry.getKey(), read(camelContext, entry.getValue()));
             }
         }
         JsonNode from = root.get(FROM_ENDPOINT);
@@ -345,7 +383,24 @@ public class JsonExchangeCodec {
         return exchange;
     }
 
-    private @Nullable Object read(@Nullable JsonNode node) throws IOException {
+    private Exchange readMessage(CamelContext camelContext, JsonNode root) throws IOException {
+        Exchange exchange = new DefaultExchange(camelContext);
+        JsonNode exchangeId = root.get(EXCHANGE_ID);
+        if (exchangeId != null && exchangeId.isString()) {
+            exchange.setExchangeId(exchangeId.getStringValue());
+        }
+        Message message = exchange.getMessage();
+        message.setBody(read(camelContext, root.get(BODY)));
+        JsonNode headers = root.get(HEADERS);
+        if (headers != null) {
+            for (Map.Entry<String, JsonNode> entry : headers.entries()) {
+                message.setHeader(entry.getKey(), read(camelContext, entry.getValue()));
+            }
+        }
+        return exchange;
+    }
+
+    private @Nullable Object read(CamelContext camelContext, @Nullable JsonNode node) throws IOException {
         if (node == null || node.isNull()) {
             return null;
         }
@@ -354,6 +409,10 @@ public class JsonExchangeCodec {
             throw new IOException("A stored value has no type");
         }
         String typeName = typeNode.getStringValue();
+        JsonNode exchange = node.get(EXCHANGE);
+        if (exchange != null && EXCHANGE_TYPE.equals(typeName) && exchange.isObject()) {
+            return readMessage(camelContext, exchange);
+        }
         JsonNode items = node.get(ITEMS);
         if (items != null) {
             Supplier<Collection<Object>> factory = COLLECTIONS.get(typeName);
@@ -362,7 +421,7 @@ public class JsonExchangeCodec {
             }
             Collection<Object> collection = factory.get();
             for (JsonNode item : items.values()) {
-                collection.add(read(item));
+                collection.add(read(camelContext, item));
             }
             return collection;
         }
@@ -374,7 +433,7 @@ public class JsonExchangeCodec {
             }
             Map<String, Object> map = factory.get();
             for (Map.Entry<String, JsonNode> entry : entries.entries()) {
-                map.put(entry.getKey(), read(entry.getValue()));
+                map.put(entry.getKey(), read(camelContext, entry.getValue()));
             }
             return map;
         }

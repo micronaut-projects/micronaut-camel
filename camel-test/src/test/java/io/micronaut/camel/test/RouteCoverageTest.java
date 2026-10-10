@@ -55,6 +55,28 @@ class RouteCoverageTest {
     }
 
     @Test
+    void theFileOfATestWithADescriptiveNameHasASafeName() throws Exception {
+        try (ApplicationContext context = run(CoveredTest.class)) {
+            context.getBean(ProducerTemplate.class).requestBody("direct:order", "book");
+            // a Spock feature name
+            context.getBean(CamelTestAnnotations.class).testMethodStarted("orders/returns: are shipped <fast>");
+        }
+
+        Path file = directory.resolve(CoveredTest.class.getName() + "-orders_returns__are_shipped__fast_.xml");
+        assertTrue(Files.exists(file), () -> "no file " + file);
+        assertTrue(Files.readString(file).contains("<method>orders/returns: are shipped &lt;fast&gt;</method>"));
+    }
+
+    @Test
+    void fileNamesKeepOnlySafeCharacters() {
+        assertEquals("com.example.OrderSpec-orders_returns__are_shipped.xml",
+            RouteCoverageDumper.fileName("com.example.OrderSpec", "orders/returns: are shipped"));
+        // the binary names of nested classes keep their $
+        assertEquals("com.example.Order$Spec.xml", RouteCoverageDumper.fileName("com.example.Order$Spec", null));
+        assertEquals("a-b_c-1.2.xml", RouteCoverageDumper.fileName("a", "b_c-1.2"));
+    }
+
+    @Test
     void theRouteCoverageIsOnlyDumpedForAnnotatedTests() throws Exception {
         try (ApplicationContext context = run(UncoveredTest.class)) {
             context.getBean(ProducerTemplate.class).requestBody("direct:order", "book");

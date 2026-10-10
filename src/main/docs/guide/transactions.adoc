@@ -130,9 +130,9 @@ The JSON keeps the type of every value, so that the body and the headers are rea
 
 * bodies and headers of JDK value types: strings, numbers, booleans, characters, `byte[]`, `UUID`, `Date` and the `java.time` types
 * bodies and headers of the types introspected at compile time, such as `@Serdeable` types with Micronaut Serialization, which need no reflection in a native image
-* lists, sets and maps with string keys of such values, such as the list of a body grouped by the aggregation strategy
+* lists, sets and maps with string keys of such values, such as a list that the aggregation strategy builds in the body
 
-Like Camel's own codec, it stores the exchange ID, the body, the headers and the aggregation properties. Headers of other types are left out, and a body of another type fails the aggregation. The headers of introspected types are stored only with the repository's `allowSerializedHeaders` option. Other types are never instantiated from the stored type names, so the repository's `deserializationFilter` is not needed. The tables are the same as with Java serialization.
+Like Camel's own codec, it stores the exchange ID, the body, the headers and the aggregation properties. It also stores the `CamelGroupedExchange` property, where Camel's list aggregation strategies collect what they group until the aggregation completes: the bodies of `AggregationStrategies.groupedBody()`, stored like bodies, and the exchanges of `AggregationStrategies.groupedExchange()`, stored with their exchange ID, body and headers (the other properties of the grouped exchanges are not stored). Headers of other types are left out, and a body or a grouped body of another type fails the aggregation. The headers of introspected types are stored only with the repository's `allowSerializedHeaders` option. Other types are never instantiated from the stored type names, so the repository's `deserializationFilter` is not needed. The tables are the same as with Java serialization.
 
 The `JsonExchangeCodec` bean behind the codec can be used by other repositories, such as `MicronautCacheAggregationRepository` (see the <<integrations, Micronaut integrations>>), and the `JsonLevelDBSerializer` bean stores the exchanges of camel-leveldb's `LevelDBAggregationRepository` with it, with `repository.setSerializer(serializer)`.
 
