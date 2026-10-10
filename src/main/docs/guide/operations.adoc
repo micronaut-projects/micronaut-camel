@@ -54,7 +54,7 @@ The exposure level (`camel.health.exposure-level`) sets the details of the check
 
 A bean that implements Camel's `HealthCheck` interface, usually by extending `AbstractHealthCheck`, is found by Camel in the registry and runs with the other checks:
 
-snippet::io.micronaut.camel.docs.operations.InventoryHealthCheck[tags="check", indent=0, title="A custom health check"]
+snippet::io.micronaut.camel.docs.operations.InventoryHealthCheck[tags="check", indent=0, title="A custom health check", languages="java,kotlin,groovy"]
 
 <1> Any bean of type `HealthCheck` is a Camel health check.
 <2> The group and id of the check. The id is the key of the check in the health details.
@@ -148,7 +148,7 @@ Camel Main's `camel.metrics.path` and `camel.metrics.text-format-version` option
 
 The `micrometer` component also uses the Micronaut registry, whether or not `camel.metrics.enabled` is set:
 
-snippet::io.micronaut.camel.docs.operations.OrderRoutes[tags="routes", indent=0, title="Counting messages with the micrometer component"]
+snippet::io.micronaut.camel.docs.operations.OrderRoutes[tags="routes", indent=0, title="Counting messages with the micrometer component", languages="java,kotlin,groovy"]
 
 <1> Increments the `orders.placed` counter of the Micronaut meter registry.
 

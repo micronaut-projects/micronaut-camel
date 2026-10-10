@@ -4,7 +4,7 @@ Besides the beans that Camel autowires from the Micronaut application context, M
 
 The `micronaut-event` component connects routes to Micronaut application events. A producer publishes the message body as an event, converted to the type in the URI; a consumer receives the events of that type, or every event with `micronaut-event:all`:
 
-snippet::io.micronaut.camel.docs.integrations.OrderEventRoutes[tags="routes", indent=0, title="Publishing and consuming application events"]
+snippet::io.micronaut.camel.docs.integrations.OrderEventRoutes[tags="routes", indent=0, title="Publishing and consuming application events", languages="java,kotlin,groovy"]
 
 <1> Publishes the body as an `OrderPlaced` event, which `@EventListener` methods receive.
 <2> Receives the `OrderPlaced` events, published by any bean with `ApplicationEventPublisher`.
@@ -114,7 +114,7 @@ micronaut:
         path: /var/documents
 ----
 
-snippet::io.micronaut.camel.docs.integrations.DocumentRoutes[tags="routes", indent=0, title="Storing and reading objects"]
+snippet::io.micronaut.camel.docs.integrations.DocumentRoutes[tags="routes", indent=0, title="Storing and reading objects", languages="java,kotlin,groovy"]
 
 <1> The URI names the object storage configuration: `documents`. The bucket, or container, is part of that configuration. `object-storage:default` uses the only object storage of the application.
 <2> The `get` operation reads the object into the body, as a byte array, or `null` when there is no such object.

@@ -30,28 +30,28 @@ dependency:io.micronaut.camel:micronaut-camel-processor[scope="annotationProcess
 
 An interface whose calls send messages to an endpoint:
 
-snippet::io.micronaut.camel.docs.annotations.OrderSender[tags="sender", indent=0, title="An interface"]
+snippet::io.micronaut.camel.docs.annotations.OrderSender[tags="sender", indent=0, title="An interface", languages="java,kotlin,groovy"]
 
-snippet::io.micronaut.camel.docs.annotations.Checkout[tags="checkout", indent=0, title="Producing messages"]
+snippet::io.micronaut.camel.docs.annotations.Checkout[tags="checkout", indent=0, title="Producing messages", languages="java,kotlin,groovy"]
 
 <1> `@Produce` injects a proxy of `OrderSender` that sends to `direct:orders`.
 <2> Calling the proxy sends the order.
 
-snippet::io.micronaut.camel.docs.annotations.OrderConsumer[tags="consumer", indent=0, title="Consuming messages"]
+snippet::io.micronaut.camel.docs.annotations.OrderConsumer[tags="consumer", indent=0, title="Consuming messages", languages="java,kotlin,groovy"]
 
 <1> The method is subscribed to `direct:orders` when Camel starts. The bean must be a singleton.
 <2> Camel converts the message body to the type of the parameter.
 
 The processor generates a type converter loader for each `@Converter` class, in place of the loader that `camel-package-maven-plugin` generates for Maven builds:
 
-snippet::io.micronaut.camel.docs.annotations.PriceConverters[tags="converters", indent=0, title="A type converter"]
+snippet::io.micronaut.camel.docs.annotations.PriceConverters[tags="converters", indent=0, title="A type converter", languages="java,kotlin,groovy"]
 
 <1> A class with converter methods.
 <2> A converter method takes the value, and optionally the `Exchange`, and returns the converted value.
 
 `@EndpointInject` also works in tests, for example to inject a `MockEndpoint`:
 
-snippet::io.micronaut.camel.docs.annotations.AnnotationsTest[tags="test", indent=0, title="A test"]
+snippet::io.micronaut.camel.docs.annotations.AnnotationsTest[tags="test", indent=0, title="A test", languages="java,kotlin,groovy"]
 
 <1> A template that sends to `direct:orders`.
 
