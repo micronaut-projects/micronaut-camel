@@ -17,6 +17,23 @@ camel:
 
 Camel logs a summary of the options it applied when the application starts.
 
+=== Several instances of a component
+
+`camel.component.<name>.*` configures the component of that name. To use the same component with two configurations, for example two Kafka clusters, declare a second instance with camel-main's `camel.beans.*` options: the bean name becomes the scheme of its endpoints.
+
+[configuration]
+----
+camel:
+  component:
+    kafka:
+      brokers: orders.example.com:9092
+  beans:
+    audit: "#class:org.apache.camel.component.kafka.KafkaComponent"
+    audit.brokers: audit.example.com:9092
+----
+
+Routes then use `kafka:orders` for the first cluster and `audit:events` for the second. camel-main normalizes the names of these beans, so use letters and digits only.
+
 === IDE support and the configuration reference
 
 The `micronaut-camel-components` module documents the `camel.main.*` options, Camel's other configuration groups, and the options of every Camel component, data format and language as `@ConfigurationProperties`, so IDEs complete them and they appear in the configuration reference:
