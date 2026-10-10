@@ -8,8 +8,18 @@ datasources:
     # Micronaut transactions run on Spring's DataSourceTransactionManager, which camel-sql joins
     transaction-manager: springJdbc
 micronaut:
+  security:
+    # enabled by the docs-security environment of io.micronaut.camel.docs.integrations.AdminRoutesTest
+    enabled: false
   object-storage:
     local:
       # the object storage of io.micronaut.camel.docs.integrations.DocumentRoutes
       documents:
         path: build/tmp/docs-documents
+  caches:
+    # the idempotent repository of io.micronaut.camel.docs.integrations.IntegrationRoutes
+    imports:
+      maximum-size: 1000
+    # the aggregation repository of io.micronaut.camel.docs.integrations.BasketRepositories
+    baskets:
+      maximum-size: 1000

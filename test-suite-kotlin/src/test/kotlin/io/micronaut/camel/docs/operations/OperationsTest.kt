@@ -31,6 +31,8 @@ import org.junit.jupiter.api.Test
 @Property(name = "endpoints.health.details-visible", value = "ANONYMOUS")
 @Property(name = "camel.health.exposure-level", value = "full")
 @Property(name = "camel.metrics.enabled", value = "true")
+// the file consumer of the docs.integrations routes is DOWN until its first poll
+@Property(name = "camel.health.initial-state", value = "up")
 class OperationsTest {
 
     @Inject
