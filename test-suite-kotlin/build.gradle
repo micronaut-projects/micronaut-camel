@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     kspTest(mn.micronaut.inject.kotlin)
+    kspTest(projects.micronautCamelProcessor)
     testImplementation(projects.micronautCamelCore)
     testImplementation(projects.micronautCamelTest)
     testImplementation(libs.camel.bean)

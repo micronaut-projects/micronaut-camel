@@ -28,10 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 /**
  * Ports the {@code type-converter} example of camel-spring-boot-examples.
  * <p>
- * The route is a Micronaut singleton. The type converter loader that the Camel Maven plugin generates for
- * {@link CustomGeneratedConverter} is copied from the example, with its
- * {@code META-INF/services/org/apache/camel/TypeConverterLoader} file, and Camel loads it on startup: see
- * {@link CustomConverterLoaderTest}. The Camel 2.x {@code META-INF/services/org/apache/camel/TypeConverter} file was dropped.
+ * The route is a Micronaut singleton. In place of the type converter loader that the Camel Maven plugin
+ * generates for {@link CustomGeneratedConverter}, the micronaut-camel annotation processor generates a loader
+ * bean for every {@code @Converter} class: see {@link CustomConverterLoaderTest}. The Camel 2.x
+ * {@code META-INF/services/org/apache/camel/TypeConverter} file was dropped.
  */
 @MicronautTest(environments = "example-type-converter")
 public class CustomConverterGeneratedTest {

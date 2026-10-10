@@ -8,6 +8,9 @@ dependencies {
     api(projects.micronautCamelCore)
     api(libs.camel.mock)
 
+    // applies the Camel annotations of Groovy test instances, when Micronaut Test is used
+    compileOnly(mnTest.micronaut.test.core)
+
     testAnnotationProcessor(mn.micronaut.inject.java)
     testImplementation(mnTest.micronaut.test.junit5)
     testImplementation(libs.camel.direct)

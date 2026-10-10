@@ -15,6 +15,7 @@
  */
 package io.micronaut.camel;
 
+import io.micronaut.camel.inject.CamelConsumeMethods;
 import io.micronaut.camel.registry.CamelInternal;
 import io.micronaut.context.BeanProvider;
 import io.micronaut.context.event.ShutdownEvent;
@@ -38,14 +39,17 @@ final class CamelLifecycle {
 
     private final MicronautCamelMain main;
     private final BeanProvider<CamelContext> camelContext;
+    private final CamelConsumeMethods consumeMethods;
 
     /**
      * @param main         The camel-main bootstrap
-     * @param camelContext The Camel context
+     * @param camelContext   The Camel context
+     * @param consumeMethods The methods annotated with {@code @Consume}
      */
-    CamelLifecycle(MicronautCamelMain main, BeanProvider<CamelContext> camelContext) {
+    CamelLifecycle(MicronautCamelMain main, BeanProvider<CamelContext> camelContext, CamelConsumeMethods consumeMethods) {
         this.main = main;
         this.camelContext = camelContext;
+        this.consumeMethods = consumeMethods;
     }
 
     /**
@@ -56,8 +60,9 @@ final class CamelLifecycle {
     @EventListener
     void onStartup(StartupEvent event) {
         // create the context bean first, so beans collected as routes can inject it
-        camelContext.get();
+        CamelContext context = camelContext.get();
         try {
+            consumeMethods.subscribe(context);
             main.startRoutes();
         } catch (Exception e) {
             throw RuntimeCamelException.wrapRuntimeCamelException(e);

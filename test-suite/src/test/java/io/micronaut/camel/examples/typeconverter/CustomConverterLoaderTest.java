@@ -24,8 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Added to the {@code type-converter} example of camel-spring-boot-examples, whose tests register the
- * converters at runtime: checks that the copied {@link CustomGeneratedConverterLoader} is found through
- * {@code META-INF/services/org/apache/camel/TypeConverterLoader}, without registering anything in the test.
+ * converters at runtime: checks that the loader that the micronaut-camel annotation processor generates for
+ * the {@code @Converter} class {@link CustomGeneratedConverter} registers the converter, without registering
+ * anything in the test.
  */
 @MicronautTest(environments = "example-type-converter")
 class CustomConverterLoaderTest {

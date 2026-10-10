@@ -1,0 +1,5 @@
+camel:
+  main:
+    name: PojoExample
+number:
+  period: 3600000

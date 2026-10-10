@@ -4,13 +4,18 @@ plugins {
 
 dependencies {
     implementation(mn.micronaut.core.processor)
-    implementation(mnSourcegen.micronaut.sourcegen.generator)
-    implementation(platform(libs.boms.camel))
+    // api, as Groovy loads the visitors from the compile classpath
+    api(mnSourcegen.micronaut.sourcegen.generator)
+    // the sourcegen visitors on the Groovy compile classpath need its annotations
+    api(mnSourcegen.micronaut.sourcegen.annotations)
+    // the backends that write the generated sources, so applications only add this processor
+    api(mnSourcegen.micronaut.sourcegen.generator.java)
+    api(mnSourcegen.micronaut.sourcegen.generator.kotlin)
+    api(platform(libs.boms.camel))
     // the Camel catalog is the source of the generated configuration
-    implementation(libs.camel.catalog)
+    api(libs.camel.catalog)
 
     testImplementation(mn.micronaut.inject.java.test)
-    testImplementation(mnSourcegen.micronaut.sourcegen.generator.java)
     testImplementation(projects.micronautCamelCore)
     testImplementation(mnTest.junit.jupiter.api)
     testRuntimeOnly(mnTest.junit.jupiter.engine)

@@ -1,1 +1,2 @@
 io.micronaut.camel.processor.CamelConfigVisitor
+io.micronaut.camel.processor.CamelAnnotationsVisitor
