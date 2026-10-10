@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 /**
- * A Camel data format on the Micronaut JSON mapper, which is reflection-free with Micronaut Serialization.
+ * Camel on the Micronaut JSON mapper, which is reflection-free with Micronaut Serialization: a data format, a
+ * fallback type converter between serializable types and JSON, and a codec of the exchanges that repositories
+ * persist.
  *
  * @author Graeme Rocher
  * @since 1.0.0

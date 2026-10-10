@@ -23,6 +23,7 @@ import io.micronaut.serde.annotation.Serdeable;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import org.apache.camel.CamelContext;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,9 @@ class NativeHttpTest {
     @Client("/")
     HttpClient client;
 
+    @Inject
+    CamelContext camelContext;
+
     @Test
     void restRoutesAreServed() {
         assertEquals("Hello Fred", client.toBlocking().retrieve("/native/hello/Fred"));
@@ -51,6 +55,12 @@ class NativeHttpTest {
             .accept(MediaType.APPLICATION_JSON_TYPE));
 
         assertEquals("{\"title\":\"CAMEL\",\"pages\":200}", json);
+    }
+
+    @Test
+    void typesAreConvertedWithMicronautSerialization() {
+        assertEquals(new Book("Camel", 100), camelContext.getTypeConverter().convertTo(Book.class, "{\"title\":\"Camel\",\"pages\":100}"));
+        assertEquals("{\"title\":\"Camel\",\"pages\":100}", camelContext.getTypeConverter().convertTo(String.class, new Book("Camel", 100)));
     }
 
     @Serdeable

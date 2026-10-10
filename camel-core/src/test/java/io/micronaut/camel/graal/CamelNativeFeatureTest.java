@@ -24,6 +24,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class CamelNativeFeatureTest {
 
@@ -65,6 +66,15 @@ class CamelNativeFeatureTest {
 
         assertEquals(Set.of("example.Shop"), reflective);
         assertEquals(Set.of("example.Orders"), proxies);
+    }
+
+    @Test
+    void namesThePropertiesOfGetters() {
+        assertEquals("jdbcUrl", CamelNativeFeature.propertyName("getJdbcUrl"));
+        assertEquals("URL", CamelNativeFeature.propertyName("getURL"));
+        assertEquals("closed", CamelNativeFeature.propertyName("isClosed"));
+        assertNull(CamelNativeFeature.propertyName("get"));
+        assertNull(CamelNativeFeature.propertyName("close"));
     }
 
     private static void read(String name, String content, Set<String> reflective, Set<String> proxies) throws IOException {

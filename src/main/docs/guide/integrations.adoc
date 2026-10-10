@@ -23,6 +23,17 @@ snippet::io.micronaut.camel.docs.integrations.ImportRepositories[tags="repositor
 
 <1> The cache configured under `micronaut.caches.imports`.
 
+=== Aggregation repositories on Micronaut caches
+
+`MicronautCacheAggregationRepository` stores the exchanges that the aggregator EIP is aggregating in a Micronaut cache, as JSON written by the `JsonExchangeCodec` bean, which needs `micronaut-serde-jackson` or `micronaut-jackson-databind`. Bodies and headers can be JDK value types, collections of them, and types introspected at compile time, such as `@Serdeable` types, as for the <<transactions, JDBC aggregation repository>>.
+
+snippet::io.micronaut.camel.docs.integrations.BasketRepositories[tags="repository", indent=0, title="An aggregation repository on a cache", languages="java"]
+
+<1> The cache configured under `micronaut.caches.baskets`. It must not evict the entries of the repository.
+<2> The codec that writes the exchanges as JSON.
+
+Use the repository with `aggregate(...).aggregationRepository(baskets)`. It is recoverable: the completed exchanges stay in the cache until the aggregator confirms them, and are sent again when the route fails, with the `recoveryInterval`, `maximumRedeliveries` and `deadLetterUri` options of Camel's recoverable repositories. Setting `useRecovery` to `false` disables recovery. The repository keeps the list of its keys in the cache too, under `<name>:keys`, and updates it from one application instance at a time: with a cache shared by several instances, such as a Redis cache, give each instance a repository of its own name, the first argument of the constructor.
+
 === JSON with Micronaut Serialization
 
 The `micronaut-json` data format reads and writes JSON with the Micronaut `JsonMapper`: https://micronaut-projects.github.io/micronaut-serialization/latest/guide/[Micronaut Serialization], whose `@Serdeable` types are introspected at compile time instead of by reflection, or Jackson with `micronaut-jackson-databind`. Use it in routes with `marshal().custom("micronaut-json")` and `unmarshal().custom("micronaut-json")`, or in the REST DSL with `camel.rest.json-data-format=micronaut-json`. To unmarshal to a type, configure a `MicronautJsonDataFormat` with `setUnmarshalType`.
@@ -34,6 +45,16 @@ snippet::io.micronaut.camel.docs.integrations.IntegrationRoutes[tags="routes", i
 <1> The `file` consumer polls every second on the Micronaut scheduler.
 <2> The idempotent consumer uses the `imports` repository.
 <3> The body is written as JSON with the Micronaut JSON mapper.
+
+==== Type conversion
+
+When a `JsonMapper` is present, Camel's type converter converts JSON to the types that Micronaut Serialization deserializes, and those types to JSON:
+
+* a JSON object in a `String`, `byte[]` or `InputStream` body to a `@Serdeable` type, for example with `convertBodyTo(Order.class)`, `getBody(Order.class)` or a bean method parameter
+* a `@Serdeable` type to a JSON `String`, instead of the result of its `toString()` method
+* a `@Serdeable` type to a `Map`
+
+The converter is a fallback, so the type converters of Camel and of the application, such as `@Converter` methods, come first. Maps are converted to `@Serdeable` types by the Micronaut conversion service, as before, and conversions to other JDK types are left to Camel. Set `micronaut.camel.json.type-converter.enabled` to `false` to disable the converter.
 
 === Hazelcast
 

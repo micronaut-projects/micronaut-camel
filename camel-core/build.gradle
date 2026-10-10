@@ -39,6 +39,9 @@ dependencies {
     compileOnly(mnRabbitmq.micronaut.rabbitmq)
     compileOnly(mnData.micronaut.data.connection.jdbc)
     compileOnly(mnData.micronaut.data.tx)
+    // exchange persistence with the Micronaut JSON mapper
+    compileOnly(libs.camel.sql)
+    compileOnly(libs.camel.leveldb)
     // ecosystem integrations, active only when the application adds these modules
     compileOnly(mn.micronaut.http.client.core)
     compileOnly(mnSecurity.micronaut.security)
@@ -57,6 +60,7 @@ dependencies {
     testAnnotationProcessor(mn.micronaut.inject.java)
     testAnnotationProcessor(projects.micronautCamelProcessor)
     testImplementation(mnTest.micronaut.test.junit5)
+    testImplementation(mnTest.junit.jupiter.params)
     testImplementation(mn.graalvm.nativeimage)
     testImplementation(libs.camel.bean)
     testImplementation(libs.camel.direct)
@@ -70,6 +74,7 @@ dependencies {
     testImplementation(libs.camel.opentelemetry2)
     testImplementation(libs.camel.seda)
     testImplementation(libs.camel.sql)
+    testImplementation(libs.camel.leveldb)
     testImplementation(libs.camel.timer)
     testImplementation(libs.camel.yaml.dsl)
     testImplementation(libs.camel.file)

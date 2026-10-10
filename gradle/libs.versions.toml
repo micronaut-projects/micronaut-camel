@@ -32,6 +32,8 @@ micronaut-nats = "5.1.0"
 micronaut-rabbitmq = "5.1.0"
 micronaut-data = "5.2.2"
 micronaut-sql = "7.2.0"
+micronaut-test-resources = "4.3.1"
+micronaut-aot = "3.0.0"
 micronaut-security = "5.4.0"
 micronaut-redis = "7.2.0"
 micronaut-validation = "5.2.1"
@@ -90,6 +92,11 @@ boms-camel = { module = "org.apache.camel:camel-bom", version.ref = "managed-cam
 # the HL7 v2.4 structures of the fhir example, at the version of the hapi-base that camel-hl7 uses
 hapi-structures-v24 = { module = "ca.uhn.hapi:hapi-structures-v24", version.ref = "hapi-hl7v2" }
 
+# the Micronaut AOT API of the camel-aot optimization
+micronaut-aot-core = { module = "io.micronaut.aot:micronaut-aot-core", version.ref = "micronaut-aot" }
+# the Micronaut test resources client, for the Kafka test of test-suite-graal
+micronaut-test-resources-client = { module = "io.micronaut.testresources:micronaut-test-resources-client", version.ref = "micronaut-test-resources" }
+
 # Versions from boms-camel
 camel-main = { module = "org.apache.camel:camel-main" }
 camel-arangodb = { module = "org.apache.camel:camel-arangodb" }
@@ -137,6 +144,7 @@ camel-jackson3 = { module = "org.apache.camel:camel-jackson3" }
 camel-jms = { module = "org.apache.camel:camel-jms" }
 camel-jpa = { module = "org.apache.camel:camel-jpa" }
 camel-kafka = { module = "org.apache.camel:camel-kafka" }
+camel-leveldb = { module = "org.apache.camel:camel-leveldb" }
 camel-log = { module = "org.apache.camel:camel-log" }
 camel-management = { module = "org.apache.camel:camel-management" }
 camel-micrometer = { module = "org.apache.camel:camel-micrometer" }

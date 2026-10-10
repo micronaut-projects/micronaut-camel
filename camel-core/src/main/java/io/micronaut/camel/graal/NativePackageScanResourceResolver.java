@@ -24,7 +24,9 @@ import org.apache.camel.util.AntPathMatcher;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
@@ -33,6 +35,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -50,6 +53,7 @@ public final class NativePackageScanResourceResolver extends DefaultPackageScanR
     private static final String CLASSPATH = "classpath:";
 
     private @Nullable FileSystem resourceFileSystem;
+    private @Nullable List<String> resourceIndex;
 
     /**
      * @return Whether the code runs in a native image
@@ -67,11 +71,19 @@ public final class NativePackageScanResourceResolver extends DefaultPackageScanR
         String pattern = location.substring(CLASSPATH.length());
         String root = AntPathMatcher.INSTANCE.determineRootDir(pattern);
         String subPattern = pattern.substring(root.length());
+        ResourceLoader loader = PluginHelper.getResourceLoader(getCamelContext());
+        for (String name : resourceIndex()) {
+            if (name.startsWith(root) && AntPathMatcher.INSTANCE.match(subPattern, name.substring(root.length()))) {
+                resources.add(loader.resolveResource(CLASSPATH + name));
+            }
+        }
+        if (!resources.isEmpty()) {
+            return resources;
+        }
         Path start = fileSystem().getPath("/" + root);
         if (!Files.exists(start)) {
             return resources;
         }
-        ResourceLoader loader = PluginHelper.getResourceLoader(getCamelContext());
         Files.walkFileTree(start, new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) {
@@ -97,6 +109,20 @@ public final class NativePackageScanResourceResolver extends DefaultPackageScanR
             resourceFileSystem = null;
         }
         super.doStop();
+    }
+
+    /**
+     * @return The route resources of the image, listed by {@link CamelNativeFeature} when the image was built,
+     * as the image cannot always list its resources, for example with runtime class loading
+     */
+    private List<String> resourceIndex() throws IOException {
+        if (resourceIndex == null) {
+            try (InputStream in = NativePackageScanResourceResolver.class.getClassLoader().getResourceAsStream(CamelNativeFeature.RESOURCE_INDEX)) {
+                resourceIndex = in == null ? List.of()
+                    : new String(in.readAllBytes(), StandardCharsets.UTF_8).lines().filter(line -> !line.isBlank()).toList();
+            }
+        }
+        return resourceIndex;
     }
 
     private FileSystem fileSystem() throws IOException {
