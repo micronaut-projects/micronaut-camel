@@ -20,6 +20,7 @@ transactions:
   title: Transactions and Databases
 integrations:
   title: Micronaut Integrations
+  jsonSchema: JSON Schema
 operations:
   title: Health, Management and Observability
 lifecycle:

@@ -1,0 +1,65 @@
+https://micronaut-projects.github.io/micronaut-json-schema/latest/guide/[Micronaut JSON Schema] writes a JSON schema for each type annotated with `@JsonSchema` at build time. Micronaut Camel uses those schemas to validate messages, by resource or by type, and to describe the types of the REST DSL in its API documents. The configuration schemas of the Camel modules validate the `+camel.*+` options too: see <<configurationValidation, Validating the configuration at build time>>.
+
+Add the annotation processor of Micronaut JSON Schema, and its annotations:
+
+dependency:io.micronaut.jsonschema:micronaut-json-schema-processor[scope="annotationProcessor"]
+
+dependency:io.micronaut.jsonschema:micronaut-json-schema-annotations[]
+
+snippet::io.micronaut.camel.docs.jsonschema.Order[tags="order", indent=0, title="A type with a JSON schema"]
+
+<1> The schema of the type is written to `META-INF/schemas/order.schema.json`, named after the type, or after the `uri` or `title` of the annotation.
+<2> `@Serdeable` types are introspected at compile time: Micronaut Camel finds the `@JsonSchema` types among the bean introspections, without scanning the classpath or using reflection, and <<integrations, converts>> JSON to them and back.
+<3> Bean Validation annotations become keywords of the schema, such as `minLength` and `exclusiveMinimum`.
+
+=== Validating messages with the JSON validator component
+
+The `json-validator` component of Camel validates the body of a message against a JSON schema, here the schema generated for the type:
+
+dependency:org.apache.camel:camel-json-validator[]
+
+snippet::io.micronaut.camel.docs.jsonschema.OrderRoutes[tags="validator", indent=0, title="Validating messages against a generated schema"]
+
+<1> The schema is a classpath resource of the application.
+
+A message that does not match the schema fails with Camel's `JsonValidationException`, a `ValidationException` that lists the errors, which an error handler or `onException` handles as any other exception.
+
+Micronaut Camel adds the `jsonschema:` resources to Camel, which resolve the schema of a type without its path: by the simple or fully qualified name of the type, or by the name of the schema, such as `order`. They work wherever Camel reads a resource, such as the resource URI of `json-validator`:
+
+snippet::io.micronaut.camel.docs.jsonschema.OrderRoutes[tags="resource", indent=0, title="Validating messages against the schema of a type"]
+
+<1> The schema of the `Order` type.
+
+=== Validating by type
+
+Camel validates the input and the output of a route against a data type with `inputTypeWithValidate` and `outputTypeWithValidate`, with the Camel validator of that type. Micronaut Camel registers a validator for each `@JsonSchema` type, which validates the message against the generated schema:
+
+snippet::io.micronaut.camel.docs.jsonschema.OrderRoutes[tags="contract", indent=0, title="Validating the input of a route against the schema of its type"]
+
+<1> Camel converts the JSON body to an `Order`, with the <<integrations, JSON type converter>>, then validates it against the schema of `Order`.
+
+The validators validate a `String` or other JSON body as is, and an instance of the type as the JSON it is serialized to. They use the validator of https://micronaut-projects.github.io/micronaut-json-schema/latest/guide/#validation[Micronaut JSON Schema] when the application has it, and fail with a `JsonSchemaValidationException`, whose `getErrors()` lists the errors:
+
+dependency:io.micronaut.jsonschema:micronaut-json-schema-validation[]
+
+Without it, they validate with a `json-validator` endpoint of the schema, so `camel-json-validator` is needed, and fail with its `JsonValidationException`. A validator that a route declares for the type, with `validator().type(Order.class)`, replaces the one of Micronaut Camel.
+
+WARNING: `camel-json-validator` uses version 2 of the NetworkNT JSON Schema library, on Jackson 2, and `micronaut-json-schema-validation` uses version 3, on Jackson 3, in the same packages: an application cannot use both. Micronaut MCP, for one, brings `micronaut-json-schema-validation`. With it, validate by type, which then uses the Micronaut validator, instead of with `json-validator` endpoints.
+
+Set `micronaut.camel.json-schema.enabled` to `false` to disable the `jsonschema:` resources and the validators.
+
+=== API documents of the REST DSL
+
+With `camel-openapi-java`, the API document of the REST DSL describes the types of `type(...)` and `outType(...)`, which Camel resolves by reflection. Micronaut Camel replaces the schemas of the `@JsonSchema` types in the `components` of the document with their generated schemas, which have the descriptions of their Javadoc and the keywords of their validation annotations:
+
+[source,java]
+----
+rest("/orders")
+    .post().type(Order.class).outType(Order.class) // <1>
+    .to("direct:order");
+----
+<1> The `Order` component of the API document is the schema generated for `Order`.
+
+The schemas are converted to the OpenAPI version of the document: for OpenAPI 3.0, the default of Camel, `exclusiveMinimum` and `exclusiveMaximum` become booleans next to `minimum` and `maximum`, and a `null` type becomes `nullable`; OpenAPI 3.1 uses the dialect of the generated schemas. The references of a schema to the schema of another type point to the component of that type. The rest of the document is the one of Camel. Set `micronaut.camel.json-schema.openapi.enabled` to `false` to keep the schemas of Camel; a `RestApiProcessorFactory` bean of the application replaces the one of Micronaut Camel.
+
+NOTE: In a native image, the generated schemas under `META-INF/schemas` are resources of the image, and the `@JsonSchema` types are found without reflection.

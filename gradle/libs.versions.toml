@@ -47,6 +47,7 @@ micronaut-pulsar = "3.2.0"
 micronaut-mongodb = "6.2.0"
 micronaut-opensearch = "2.1.1"
 micronaut-openapi = "7.3.0"
+micronaut-json-schema = "2.3.1"
 groovy = "4.0.24"
 spock = "2.3-groovy-4.0"
 hapi-hl7v2 = "2.6.0"
@@ -83,6 +84,7 @@ micronaut-pulsar = { module = "io.micronaut.pulsar:micronaut-pulsar-bom", versio
 micronaut-mongodb = { module = "io.micronaut.mongodb:micronaut-mongo-bom", version.ref = "micronaut-mongodb" }
 micronaut-opensearch = { module = "io.micronaut.opensearch:micronaut-opensearch-bom", version.ref = "micronaut-opensearch" }
 micronaut-openapi = { module = "io.micronaut.openapi:micronaut-openapi-bom", version.ref = "micronaut-openapi" }
+micronaut-json-schema = { module = "io.micronaut.jsonschema:micronaut-json-schema-bom", version.ref = "micronaut-json-schema" }
 
 #
 # Managed dependencies appear in the BOM
@@ -122,6 +124,7 @@ camel-azure-storage-blob = { module = "org.apache.camel:camel-azure-storage-blob
 camel-bean-validator = { module = "org.apache.camel:camel-bean-validator" }
 camel-hashicorp-vault = { module = "org.apache.camel:camel-hashicorp-vault" }
 camel-jdbc = { module = "org.apache.camel:camel-jdbc" }
+camel-json-validator = { module = "org.apache.camel:camel-json-validator" }
 camel-jsonpath = { module = "org.apache.camel:camel-jsonpath" }
 camel-langchain4j-chat = { module = "org.apache.camel:camel-langchain4j-chat" }
 camel-langchain4j-embeddings = { module = "org.apache.camel:camel-langchain4j-embeddings" }

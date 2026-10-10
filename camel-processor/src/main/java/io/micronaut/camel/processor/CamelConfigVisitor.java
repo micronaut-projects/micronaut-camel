@@ -27,9 +27,12 @@ import io.micronaut.sourcegen.model.ObjectDef;
 import org.apache.camel.catalog.CamelCatalog;
 import org.apache.camel.catalog.DefaultCamelCatalog;
 import org.apache.camel.tooling.model.ArtifactModel;
+import org.apache.camel.tooling.model.BaseOptionModel;
 import org.apache.camel.tooling.model.MainModel;
 import org.jspecify.annotations.Nullable;
 
+import java.io.IOException;
+import java.io.Writer;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -115,7 +118,10 @@ public final class CamelConfigVisitor implements TypeElementVisitor<Object, Obje
                 }
                 ArtifactModel<?> model = kind.model(camelCatalog, name);
                 if (fromArtifacts(model, artifacts)) {
-                    generated.add(ConfigurationGenerator.extensionConfiguration(packageName, kind, model, context));
+                    ObjectDef configuration = ConfigurationGenerator.extensionConfiguration(packageName, kind, model, context);
+                    generated.add(configuration);
+                    writeValuesSchema(element, context, configuration.getName(), kind.prefix(model.getName()),
+                        ConfigurationGenerator.options(kind.options(model), option -> option.getName()));
                 }
             }
         }
@@ -124,8 +130,11 @@ public final class CamelConfigVisitor implements TypeElementVisitor<Object, Obje
             Predicate<String> mainIncluded = matching(mainGroups);
             for (Map.Entry<String, List<MainModel.MainOptionModel>> group : mainGroups(camelCatalog.mainModel()).entrySet()) {
                 if (mainIncluded.test(group.getKey())) {
-                    generated.add(ConfigurationGenerator.mainConfiguration(packageName, group.getKey(),
-                        groupDescription(camelCatalog.mainModel(), group.getKey()), group.getValue()));
+                    ObjectDef configuration = ConfigurationGenerator.mainConfiguration(packageName, group.getKey(),
+                        groupDescription(camelCatalog.mainModel(), group.getKey()), group.getValue());
+                    generated.add(configuration);
+                    writeValuesSchema(element, context, configuration.getName(), Names.kebabPrefix(group.getKey()),
+                        ConfigurationGenerator.options(group.getValue(), option -> option.getName().substring(group.getKey().length() + 1)));
                 }
             }
         }
@@ -136,6 +145,24 @@ public final class CamelConfigVisitor implements TypeElementVisitor<Object, Obje
                 throw new ProcessingException(element, "Failed to generate " + objectDef.getName() + ": " + e.getMessage(), e);
             }
         }
+    }
+
+    /**
+     * Writes the schema of the possible values of the options of a generated configuration class, if any.
+     */
+    private static void writeValuesSchema(ClassElement element, VisitorContext context, String className, String prefix,
+                                          Map<String, ? extends BaseOptionModel> options) {
+        String schema = ValuesSchemaGenerator.schema(className, prefix, options);
+        if (schema == null) {
+            return;
+        }
+        context.visitMetaInfFile(ValuesSchemaGenerator.SCHEMAS + className + ValuesSchemaGenerator.SUFFIX, element).ifPresent(file -> {
+            try (Writer writer = file.openWriter()) {
+                writer.write(schema);
+            } catch (IOException e) {
+                throw new ProcessingException(element, "Failed to write the schema of the values of " + className + ": " + e.getMessage(), e);
+            }
+        });
     }
 
     private static boolean fromArtifacts(ArtifactModel<?> model, Set<String> artifacts) {

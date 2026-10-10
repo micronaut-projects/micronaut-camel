@@ -11,6 +11,11 @@ dependencies {
     api(libs.camel.platform.http)
 
     testAnnotationProcessor(mn.micronaut.inject.java)
+    // the generated JSON schemas in the API documents of the REST DSL
+    testAnnotationProcessor(mnJsonSchema.micronaut.json.schema.processor)
+    testImplementation(mnJsonSchema.micronaut.json.schema.annotations)
+    testImplementation(mnValidation.validation)
+    testImplementation(libs.camel.openapi.java)
     testImplementation(mnTest.micronaut.test.junit5)
     testImplementation(mn.micronaut.http.client)
     testImplementation(mn.micronaut.http.server.netty)
