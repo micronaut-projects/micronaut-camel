@@ -121,7 +121,7 @@ snippet::io.micronaut.camel.docs.transactions.OrderRoutes[tags="routes", indent=
 
 `JdbcAggregationRepository` stores the exchanges being aggregated with Java serialization by default, so every body and header must be `Serializable`, and, in a native image, registered for serialization. The `JsonJdbcCamelCodec` bean of `micronaut-camel-core` stores them as JSON with the Micronaut `JsonMapper` instead, when `micronaut-serde-jackson` (or `micronaut-jackson-databind`) is on the classpath:
 
-snippet::io.micronaut.camel.docs.transactions.OrderAggregations[tags="repository", indent=0, title="An aggregation repository storing JSON", languages="java,python"]
+snippet::io.micronaut.camel.docs.transactions.OrderAggregations[tags="repository", indent=0, title="An aggregation repository storing JSON"]
 
 <1> The codec is a bean.
 <2> The repository writes and reads its exchanges with the codec.
