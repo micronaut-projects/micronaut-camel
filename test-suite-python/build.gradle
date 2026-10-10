@@ -5,8 +5,6 @@ plugins {
 }
 
 dependencies {
-    // the Java helpers of src/test/java, such as the services of the samples, are processed by javac
-    testAnnotationProcessor(mn.micronaut.inject.java)
     // Annotation processors MUST be testImplementation (not testAnnotationProcessor): the Python
     // compiler takes the compile classpath as its annotation processor path.
     testImplementation(mn.micronaut.inject.python.test)
