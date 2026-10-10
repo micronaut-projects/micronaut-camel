@@ -194,3 +194,9 @@ tasks.named('check') {
     dependsOn(testing.suites.openapiTest)
     dependsOn(testing.suites.jsonSchemaTest)
 }
+
+tasks.named('compileTestJava', JavaCompile) {
+    // hundreds of samples and examples: compile them outside the Gradle daemon
+    options.fork = true
+    options.forkOptions.memoryMaximumSize = '2g'
+}
