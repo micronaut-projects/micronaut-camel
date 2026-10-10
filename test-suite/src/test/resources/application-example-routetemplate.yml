@@ -1,0 +1,4 @@
+# Ports routetemplate/src/main/resources/application.yaml (the xml profile is not ported)
+camel:
+  main:
+    name: MyCamel

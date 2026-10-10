@@ -1,0 +1,13 @@
+# Ports supervising-route-controller/src/main/resources/application.properties
+camel:
+  main:
+    # the name of Camel
+    name: SampleSupervisingRouteController
+
+  # route controller configuration
+  routecontroller:
+    enabled: true
+    # 5000 in the example
+    initial-delay: 100
+    backoff-delay: 5000
+    backoff-max-attempts: 10

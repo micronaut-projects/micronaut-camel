@@ -1,0 +1,5 @@
+# Ports splitter-eip/src/main/resources/application.properties
+camel:
+  main:
+    # the name of Camel
+    name: CamelSpringBootSplitter

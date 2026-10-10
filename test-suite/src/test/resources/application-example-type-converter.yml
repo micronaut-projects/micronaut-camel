@@ -1,0 +1,8 @@
+# Ports type-converter/src/main/resources/application.properties
+camel:
+  main:
+    # the name of Camel
+    name: CamelCustomConverterExample
+
+    # required for generated Type Converter Loader - Camel 3.x way
+    load-type-converters: true

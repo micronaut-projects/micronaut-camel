@@ -1,0 +1,13 @@
+# Ports routes-configuration/src/main/resources/application.yaml
+camel:
+  main:
+    name: MyCamel
+
+    # verbose summary so you can see the pairing of routes and routes configurations
+    startup-summary-level: verbose
+
+    # dump routes as XML (routes are coded in different DSLs but can be dumped as XML)
+    dump-routes: true
+
+    # which directory(s) to scan for routes/route-configurations which can be yaml or java files
+    routes-include-pattern: classpath:examples/routes-configuration/myroutes/*,classpath:examples/routes-configuration/myerror/*

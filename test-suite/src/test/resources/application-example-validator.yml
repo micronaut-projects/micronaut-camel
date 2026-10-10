@@ -1,0 +1,14 @@
+# Ports validator/src/main/resources/application.properties
+camel:
+  main:
+    # the name of Camel
+    name: SampleCamel
+
+# properties used in the Camel route and beans
+# --------------------------------------------
+
+# what to say
+greeting: Hello World
+
+timer:
+  period: 200

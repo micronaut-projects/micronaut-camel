@@ -1,0 +1,8 @@
+# Ports endpointdsl/src/main/resources/application.properties
+camel:
+  main:
+    # the name of Camel
+    name: MyCamel
+
+# what to say
+greeting: Hello World

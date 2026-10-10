@@ -1,0 +1,11 @@
+# Ports groovy/src/main/resources/application.properties
+camel:
+  main:
+    # give Camel a name
+    name: GroovyExample
+
+    # the YAML route
+    routes-include-pattern: classpath:examples/groovy/*.camel.yaml
+
+    # the Groovy sources (DTO and service) which are pre-compiled on startup
+    groovy-script-pattern: classpath:examples/groovy/camel-groovy/*

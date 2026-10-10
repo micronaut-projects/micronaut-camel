@@ -1,0 +1,7 @@
+camel:
+  main:
+    name: MyCamel
+  variable:
+    greeting: Random number
+    random: 999
+time: 200

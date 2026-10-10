@@ -46,12 +46,20 @@ boms-camel = { module = "org.apache.camel:camel-bom", version.ref = "managed-cam
 # Versions from boms-camel
 camel-main = { module = "org.apache.camel:camel-main" }
 camel-bean = { module = "org.apache.camel:camel-bean" }
+camel-csv = { module = "org.apache.camel:camel-csv" }
 camel-direct = { module = "org.apache.camel:camel-direct" }
 camel-endpointdsl = { module = "org.apache.camel:camel-endpointdsl" }
+camel-fhir = { module = "org.apache.camel:camel-fhir" }
+camel-file = { module = "org.apache.camel:camel-file" }
+camel-groovy = { module = "org.apache.camel:camel-groovy" }
+camel-jackson3 = { module = "org.apache.camel:camel-jackson3" }
 camel-log = { module = "org.apache.camel:camel-log" }
 camel-mock = { module = "org.apache.camel:camel-mock" }
+camel-quartz = { module = "org.apache.camel:camel-quartz" }
 camel-seda = { module = "org.apache.camel:camel-seda" }
+camel-stream = { module = "org.apache.camel:camel-stream" }
 camel-timer = { module = "org.apache.camel:camel-timer" }
+camel-undertow = { module = "org.apache.camel:camel-undertow" }
 camel-yaml-dsl = { module = "org.apache.camel:camel-yaml-dsl" }
 
 [bundles]

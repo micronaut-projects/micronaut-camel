@@ -1,0 +1,14 @@
+# Ports fhir-auth-tx/src/main/resources/application.properties
+serverUrl: http://localhost:8080/fhir
+serverUser: admin
+serverPassword: Admin123
+
+fhirVersion: DSTU3
+
+# the test replaces it with a temporary directory
+input: target/work/fhir/input
+
+camel:
+  main:
+    # the name of Camel
+    name: MyCamel
