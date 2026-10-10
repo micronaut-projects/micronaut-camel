@@ -20,6 +20,7 @@ micronaut = "5.2.15"
 micronaut-docs = "3.0.0"
 micronaut-test = "5.2.0"
 micronaut-logging = "2.1.0"
+micronaut-sourcegen = "2.2.3"
 groovy = "4.0.24"
 spock = "2.3-groovy-4.0"
 
@@ -30,6 +31,7 @@ managed-camel = "4.22.1"
 # Core
 micronaut-core = { module = 'io.micronaut:micronaut-core-bom', version.ref = 'micronaut' }
 micronaut-logging = { module = "io.micronaut.logging:micronaut-logging-bom", version.ref = "micronaut-logging" }
+micronaut-sourcegen = { module = "io.micronaut.sourcegen:micronaut-sourcegen-bom", version.ref = "micronaut-sourcegen" }
 
 #
 # Managed dependencies appear in the BOM
@@ -46,6 +48,7 @@ boms-camel = { module = "org.apache.camel:camel-bom", version.ref = "managed-cam
 # Versions from boms-camel
 camel-main = { module = "org.apache.camel:camel-main" }
 camel-bean = { module = "org.apache.camel:camel-bean" }
+camel-catalog = { module = "org.apache.camel:camel-catalog" }
 camel-csv = { module = "org.apache.camel:camel-csv" }
 camel-direct = { module = "org.apache.camel:camel-direct" }
 camel-endpointdsl = { module = "org.apache.camel:camel-endpointdsl" }

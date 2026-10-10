@@ -4,6 +4,8 @@ plugins {
 
 dependencies {
     annotationProcessor(mn.micronaut.inject.java)
+    annotationProcessor(projects.micronautCamelProcessor)
+    annotationProcessor(mnSourcegen.micronaut.sourcegen.generator.java)
 
     api(mn.micronaut.context)
     api(platform(libs.boms.camel))

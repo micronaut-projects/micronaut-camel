@@ -5,6 +5,7 @@ Micronaut Camel integrates Apache Camel 4 with Micronaut 5. It was created from 
 ## Repository Shape
 
 - `camel-core/` is the runtime integration, published as `micronaut-camel-core` (`useStandardizedProjectNames`).
+- `camel-processor/` (`micronaut-camel-processor`) generates code from the Camel catalog for classes annotated with `@CamelConfig`: the `@RequiresCamel*` annotations and the camel-main `@ConfigurationProperties` of `camel-core`, and the component, data format and language `@ConfigurationProperties` of `camel-components/`. Camel applies the options at runtime through camel-main; the generated classes document them.
 - `camel-test/` (`micronaut-camel-test`) adds Camel test annotations, such as `@MockEndpoints` and `@UseAdviceWith`, to `@MicronautTest` tests.
 - `camel-bom/` is the BOM. It imports `org.apache.camel:camel-bom`.
 - `buildSrc/src/main/groovy/io.micronaut.build.internal.camel-*.gradle` holds the convention plugins: `camel-base`, `camel-module` for published modules, and `camel-tests` for the test suites.
@@ -18,7 +19,7 @@ Micronaut Camel integrates Apache Camel 4 with Micronaut 5. It was created from 
 
 ## Versions
 
-- Micronaut core is 5.2.x and Camel is 4.22.x (`managed-camel` in `gradle/libs.versions.toml`).
+- Micronaut core is 5.2.x and Camel is 4.22.x (`managed-camel` in `gradle/libs.versions.toml`). The generated code follows the Camel catalog of that version, so upgrading Camel regenerates it.
 
 ## Code
 

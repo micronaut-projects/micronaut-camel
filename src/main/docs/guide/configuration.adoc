@@ -17,6 +17,23 @@ camel:
 
 Camel logs a summary of the options it applied when the application starts.
 
+=== IDE support and the configuration reference
+
+The `micronaut-camel-core` module documents the `camel.main.*` options and Camel's other configuration groups as `@ConfigurationProperties`, so IDEs complete them and they appear in the configuration reference. The `micronaut-camel-components` module does the same for the options of every Camel component, data format and language:
+
+dependency:io.micronaut.camel:micronaut-camel-components[]
+
+Both are generated from the Camel catalog at build time. Camel itself still applies the options, so `micronaut-camel-components` is optional: the options work without it. It adds a configuration bean per component, data format and language, each only active when one of its options is set.
+
+=== Requiring a Camel component
+
+For every Camel component, data format and language, `micronaut-camel-core` has a requirement annotation in the `io.micronaut.camel.requires` package, such as `@RequiresCamelKafka`, `@RequiresCamelJacksonDataFormat` or `@RequiresCamelJsonpathLanguage`. A bean annotated with one is only created when the Camel extension is on the classpath and not disabled with `camel.component.<name>.enabled=false`:
+
+snippet::io.micronaut.camel.docs.configuration.QueueMonitor[tags="bean", indent=0, title="A bean that requires the SEDA component"]
+
+<1> The bean is only created when `camel-seda` is on the classpath.
+<2> The bean can use the component's classes safely.
+
 === Property placeholders
 
 Camel's `{{name}}` property placeholders resolve against the Micronaut environment. A placeholder can declare a default value after a colon:
