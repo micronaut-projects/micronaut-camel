@@ -1,0 +1,64 @@
+plugins {
+    id 'io.micronaut.build.internal.camel-module'
+    id 'jvm-test-suite'
+}
+
+dependencies {
+    annotationProcessor(mn.micronaut.inject.java)
+
+    api(projects.micronautCamelCore)
+    api(libs.camel.servlet)
+    // provided by the servlet container of the application, such as micronaut-http-server-jetty
+    compileOnly(mnServlet.servlet.api)
+
+    testAnnotationProcessor(mn.micronaut.inject.java)
+    testImplementation(mnTest.micronaut.test.junit5)
+    testImplementation(mn.micronaut.http.client)
+    testImplementation(mn.micronaut.jackson.databind)
+    testImplementation(mnServlet.micronaut.http.server.jetty)
+    testImplementation(libs.camel.direct)
+    testImplementation(libs.camel.jackson)
+    testImplementation(libs.camel.rest)
+    testRuntimeOnly(mnTest.junit.jupiter.engine)
+    testRuntimeOnly(mnTest.junit.platform.launcher)
+    testRuntimeOnly(mnLogging.logback.classic)
+}
+
+testing {
+    suites {
+        test {
+            targets.configureEach {
+                testTask.configure { systemProperty('servlet.server', 'Jetty') }
+            }
+        }
+        // the same tests on the other servlet containers of Micronaut Servlet
+        ['Tomcat', 'Undertow'].each { server ->
+            register("${server.toLowerCase()}Test", JvmTestSuite) {
+                useJUnitJupiter()
+                sources {
+                    java.srcDirs = ['src/test/java']
+                    resources.srcDirs = ['src/test/resources']
+                }
+                dependencies {
+                    annotationProcessor(mn.micronaut.inject.java)
+                    implementation(project())
+                    implementation(mnTest.micronaut.test.junit5)
+                    implementation(mn.micronaut.http.client)
+                    implementation(mn.micronaut.jackson.databind)
+                    implementation(server == 'Tomcat' ? mnServlet.micronaut.http.server.tomcat : mnServlet.micronaut.http.server.undertow)
+                    implementation(libs.camel.direct)
+                    implementation(libs.camel.jackson)
+                    implementation(libs.camel.rest)
+                    runtimeOnly(mnLogging.logback.classic)
+                }
+                targets.configureEach {
+                    testTask.configure { systemProperty('servlet.server', server) }
+                }
+            }
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn(testing.suites.tomcatTest, testing.suites.undertowTest)
+}

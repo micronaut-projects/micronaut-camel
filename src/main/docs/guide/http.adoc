@@ -90,3 +90,53 @@ The engine supports the options `matchOnUriPrefix`, `httpMethodRestrict`, `consu
 * multipart requests: the body of a `multipart/form-data` request is not split into attachments
 * the `platform-http:proxy` forward proxy of the Vert.x engine
 * streaming responses: the response body is read into memory before it is written, as the Spring Boot engine does for responses that are not chunked
+
+=== The servlet component
+
+Applications on a servlet container of https://micronaut-projects.github.io/micronaut-servlet/latest/guide/[Micronaut Servlet] (Jetty, Tomcat or Undertow) can also use Camel's https://camel.apache.org/components/next/servlet-component.html[servlet] component, for example to keep the URIs of routes written for Camel Spring Boot. The `micronaut-camel-servlet` module registers Camel's servlet, `CamelHttpTransportServlet`, with the servlet container of the application:
+
+dependency:io.micronaut.camel:micronaut-camel-servlet[]
+
+dependency:io.micronaut.servlet:micronaut-http-server-jetty[]
+
+The servlet serves the routes that consume from `servlet:` endpoints, below its mapping, `/camel/*` by default, next to the Micronaut servlet, which serves the controllers and the other paths:
+
+[source,java]
+----
+from("servlet:hello")                     // <1>
+    .setBody(simple("Hello ${header.name}"));
+
+restConfiguration().component("servlet"); // <2>
+rest("/orders").post().to("direct:order");
+----
+<1> The route serves `/camel/hello`.
+<2> The REST DSL uses the `servlet` component, so the REST services are served below `/camel` too. The `servlet` component is the default REST component when it is the only one on the classpath.
+
+The `camel.servlet.mapping.*` options of Camel Spring Boot configure the servlet:
+
+[cols="1,1,2"]
+|===
+|Property |Default |Description
+
+|`camel.servlet.mapping.enabled`
+|`true`
+|Whether the servlet is registered
+
+|`camel.servlet.mapping.context-path`
+|`/camel/*`
+|The mapping of the servlet, below the context path of the server, `micronaut.server.context-path`
+
+|`camel.servlet.mapping.servlet-name`
+|`CamelServlet`
+|The name of the servlet. The endpoints are served by the servlet named by their `servletName` option, `CamelServlet` by default: when the name changes, also set `camel.component.servlet.servlet-name`
+|===
+
+[configuration]
+----
+camel:
+  servlet:
+    mapping:
+      context-path: /services/*
+----
+
+The requests to the Camel servlet are handled by the servlet container and Camel's servlet binding, as with Camel Spring Boot: the Micronaut server filters, and so Micronaut Security, do not apply to them. Prefer the `platform-http` component, described above, which serves routes with the Micronaut HTTP server on every server, including the servlet containers.

@@ -40,6 +40,8 @@ micronaut-mcp = "2.1.0"
 micronaut-langchain4j = "2.3.0"
 micronaut-aws = "5.1.1"
 micronaut-azure = "6.2.0"
+micronaut-gcp = "6.2.0"
+micronaut-pulsar = "3.2.0"
 groovy = "4.0.24"
 spock = "2.3-groovy-4.0"
 hapi-hl7v2 = "2.6.0"
@@ -71,6 +73,8 @@ micronaut-langchain4j = { module = "io.micronaut.langchain4j:micronaut-langchain
 micronaut-aws = { module = "io.micronaut.aws:micronaut-aws-bom", version.ref = "micronaut-aws" }
 micronaut-azure = { module = "io.micronaut.azure:micronaut-azure-bom", version.ref = "micronaut-azure" }
 micronaut-sql = { module = "io.micronaut.sql:micronaut-sql-bom", version.ref = "micronaut-sql" }
+micronaut-gcp = { module = "io.micronaut.gcp:micronaut-gcp-bom", version.ref = "micronaut-gcp" }
+micronaut-pulsar = { module = "io.micronaut.pulsar:micronaut-pulsar-bom", version.ref = "micronaut-pulsar" }
 
 #
 # Managed dependencies appear in the BOM
@@ -112,6 +116,14 @@ camel-mcp-server-api = { module = "org.apache.camel:camel-mcp-server-api" }
 camel-qdrant = { module = "org.apache.camel:camel-qdrant" }
 camel-spring-redis = { module = "org.apache.camel:camel-spring-redis" }
 camel-bean = { module = "org.apache.camel:camel-bean" }
+camel-cli-connector = { module = "org.apache.camel:camel-cli-connector" }
+camel-ehcache = { module = "org.apache.camel:camel-ehcache" }
+camel-google-bigquery = { module = "org.apache.camel:camel-google-bigquery" }
+camel-google-pubsub = { module = "org.apache.camel:camel-google-pubsub" }
+camel-hazelcast = { module = "org.apache.camel:camel-hazelcast" }
+camel-master = { module = "org.apache.camel:camel-master" }
+camel-pulsar = { module = "org.apache.camel:camel-pulsar" }
+camel-servlet = { module = "org.apache.camel:camel-servlet" }
 camel-catalog = { module = "org.apache.camel:camel-catalog" }
 camel-csv = { module = "org.apache.camel:camel-csv" }
 camel-direct = { module = "org.apache.camel:camel-direct" }
