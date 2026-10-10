@@ -20,6 +20,7 @@ import io.micronaut.context.annotation.Requires;
 import io.micronaut.context.env.Environment;
 import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.core.reflect.ClassUtils;
 import io.micronaut.inject.BeanDefinition;
 import jakarta.inject.Singleton;
 import org.apache.camel.CamelContext;
@@ -32,6 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.Annotation;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -56,17 +59,26 @@ final class CamelTestAnnotations extends MainListenerSupport {
      */
     static final String ACTIVE_TEST_CLASS = "micronaut.test.active.spec.clazz";
 
+    /**
+     * The property setting the directory of the route coverage files of {@link EnableRouteCoverage}.
+     */
+    static final String ROUTE_COVERAGE_DIRECTORY = "micronaut.camel.test.route-coverage.directory";
+
     private static final Logger LOG = LoggerFactory.getLogger(CamelTestAnnotations.class);
     private static final int DEFAULT_SHUTDOWN_TIMEOUT_SECONDS = 10;
+    private static final String MANAGED_CAMEL_CONTEXT = "org.apache.camel.api.management.ManagedCamelContext";
 
     private final Class<?> testClass;
     private final AnnotationMetadata testMetadata;
+    private final Environment environment;
+    private volatile @Nullable RouteCoverageDumper routeCoverage;
 
     /**
      * @param environment The environment
      * @param beanContext The bean context
      */
     CamelTestAnnotations(Environment environment, BeanContext beanContext) {
+        this.environment = environment;
         this.testClass = environment.getRequiredProperty(ACTIVE_TEST_CLASS, Class.class);
         this.testMetadata = beanContext.findBeanDefinition(testClass)
             .map(BeanDefinition::getAnnotationMetadata)
@@ -96,11 +108,48 @@ final class CamelTestAnnotations extends MainListenerSupport {
         if (autoStartupExclude != null) {
             camelContext.setAutoStartupExcludePattern(autoStartupExclude.value());
         }
+        if (annotation(EnableRouteCoverage.class) != null) {
+            enableRouteCoverage(camelContext);
+        }
         UseAdviceWith useAdviceWith = annotation(UseAdviceWith.class);
         if (useAdviceWith != null && useAdviceWith.value()) {
             LOG.info("Not starting the Camel context of {}: the test starts it after advising the routes", testClass.getName());
             DefaultCamelContext.setNoStart(true);
         }
+    }
+
+    /**
+     * Records the test method that runs, which names the route coverage file.
+     *
+     * @param testMethod The name of the test method
+     */
+    void testMethodStarted(String testMethod) {
+        RouteCoverageDumper dumper = routeCoverage;
+        if (dumper != null) {
+            dumper.setTestMethod(testMethod);
+        }
+    }
+
+    private void enableRouteCoverage(CamelContext camelContext) {
+        if (!ClassUtils.isPresent(MANAGED_CAMEL_CONTEXT, CamelTestAnnotations.class.getClassLoader())) {
+            LOG.warn("Cannot dump the route coverage of {}: add the camel-management dependency", testClass.getName());
+            return;
+        }
+        Path directory = environment.getProperty(ROUTE_COVERAGE_DIRECTORY, String.class)
+            .map(Path::of)
+            .orElseGet(CamelTestAnnotations::defaultRouteCoverageDirectory);
+        RouteCoverageDumper dumper = new RouteCoverageDumper(testClass.getName(), directory);
+        routeCoverage = dumper;
+        RouteCoverageDumper.registerDomConverter(camelContext);
+        camelContext.getManagementStrategy().addEventNotifier(dumper);
+        LOG.info("Dumping the route coverage of {} to {} when Camel stops", testClass.getName(), directory);
+    }
+
+    // the build directory: target for a Maven project, build otherwise
+    private static Path defaultRouteCoverageDirectory() {
+        boolean maven = Files.exists(Path.of("pom.xml"))
+            && !Files.exists(Path.of("build.gradle")) && !Files.exists(Path.of("build.gradle.kts"));
+        return Path.of(maven ? "target" : "build", "camel-route-coverage");
     }
 
     private void applyShutdownTimeout(CamelContext camelContext) {

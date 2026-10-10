@@ -10,11 +10,14 @@ dependencies {
 
     // applies the Camel annotations of Groovy test instances, when Micronaut Test is used
     compileOnly(mnTest.micronaut.test.core)
+    // dumps the route coverage of @EnableRouteCoverage tests, when the test adds camel-management
+    compileOnly(libs.camel.management.api)
 
     testAnnotationProcessor(mn.micronaut.inject.java)
     testImplementation(mnTest.micronaut.test.junit5)
     testImplementation(libs.camel.direct)
     testImplementation(libs.camel.log)
+    testImplementation(libs.camel.management)
     testRuntimeOnly(mnTest.junit.jupiter.engine)
     testRuntimeOnly(mnTest.junit.platform.launcher)
     testRuntimeOnly(mnLogging.logback.classic)

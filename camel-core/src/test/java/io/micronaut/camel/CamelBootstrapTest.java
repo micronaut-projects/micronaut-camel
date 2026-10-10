@@ -40,8 +40,10 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CamelBootstrapTest {
@@ -59,6 +61,21 @@ class CamelBootstrapTest {
 
             assertEquals("Hello from YAML, Fred", template.requestBody("direct:yaml", "Fred", String.class));
         }
+    }
+
+    @Test
+    void xmlRoutesAreRejectedWithAClearMessage() {
+        RuntimeException e = assertThrows(RuntimeException.class,
+            () -> run(Map.of("camel.main.routes-include-pattern", "classpath:xml-routes/*.xml")).close());
+
+        Throwable cause = e;
+        while (cause != null && !(cause instanceof IllegalStateException)) {
+            cause = cause.getCause();
+        }
+        assertNotNull(cause, () -> "no IllegalStateException in " + e);
+        assertTrue(cause.getMessage().startsWith("XML routes are not supported by Micronaut Camel"), cause.getMessage());
+        assertTrue(cause.getMessage().contains("xml-routes/greetings.xml"), cause.getMessage());
+        assertTrue(cause.getMessage().contains("YAML DSL"), cause.getMessage());
     }
 
     @Test

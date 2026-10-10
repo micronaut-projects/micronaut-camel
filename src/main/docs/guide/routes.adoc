@@ -18,6 +18,18 @@ snippet::io.micronaut.camel.docs.routes.ShippingRoutes[tags="routes", indent=0, 
 
 The `camel.main.java-routes-include-pattern` and `camel.main.java-routes-exclude-pattern` options select which route builder classes are added.
 
+==== Kotlin, Groovy and Python
+
+Camel removed its Kotlin DSL in Camel 4, so Kotlin routes, like Groovy and Python (Pyronaut) routes, use the Java DSL, as the samples of this guide show. Some method names of the Java DSL are keywords of these languages:
+
+snippet::io.micronaut.camel.docs.routes.ParcelRoutes[tags="routes", indent=0, title="Methods of the Java DSL named like keywords"]
+
+<1> `when` is a Kotlin keyword: call the `when` of `choice()` with backticks, `++`when`(...)++`.
+<2> So is `in`, the predicate of `ValueBuilder` matching one of several values: `++`in`(...)++` in Kotlin, `in_(...)` in Python, where `in` is a keyword too.
+<3> In Kotlin strings, escape the `$` of Camel's `${...}` expressions, as in `"\${header.country}"`.
+
+In Python, the `from` method of a route builder is `from_`, and the other keywords of the Java DSL get the same trailing underscore, such as `in_`; `when` is not a Python keyword. Groovy needs no escaping, as long as Camel expressions are in single-quoted strings, which Groovy does not interpolate.
+
 === YAML DSL
 
 With the `camel-yaml-dsl` dependency, Camel loads the YAML routes found by `camel.main.routes-include-pattern`, which by default is `classpath:camel/*,classpath:camel-template/*,classpath:camel-rest/*`:
@@ -31,3 +43,13 @@ include::test-suite/src/test/resources/camel/notifications.yaml[tags=routes]
 ----
 
 YAML routes call Micronaut beans by name, as described in <<beans, Beans and the Camel Registry>>.
+
+=== XML routes
+
+XML routes, which Camel loads with the XML DSL of `camel-xml-io-dsl`, and Spring XML contexts are not supported: write the routes with the Java DSL or the YAML DSL. When `camel.main.routes-include-pattern` matches XML files, the application fails to start with a message that names the files:
+
+----
+XML routes are not supported by Micronaut Camel: camel.main.routes-include-pattern (classpath:camel/*) matches classpath:camel/orders.xml. Write the routes with the Java DSL, as RouteBuilder beans, or with the YAML DSL (camel-yaml-dsl), or exclude the XML files from camel.main.routes-include-pattern
+----
+
+Without the check, Camel would only report that it cannot find a `RoutesBuilderLoader` for the `xml` file extension. To keep XML files next to the routes, for example for another tool, exclude them with `camel.main.routes-exclude-pattern`, or narrow the include pattern, such as `classpath:camel/*.yaml`.

@@ -18,6 +18,7 @@ dependencies {
     testImplementation(libs.camel.jackson3)
     testImplementation(libs.camel.kafka)
     testImplementation(libs.camel.log)
+    testImplementation(libs.camel.management)
     testImplementation(libs.camel.rest)
     testImplementation(libs.camel.health)
     testImplementation(libs.camel.micrometer)

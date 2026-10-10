@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- An XML route, which Micronaut Camel does not load -->
+<routes xmlns="http://camel.apache.org/schema/xml-io">
+    <route id="xml-greetings">
+        <from uri="direct:xml"/>
+        <setBody>
+            <simple>Hello from XML, ${body}</simple>
+        </setBody>
+    </route>
+</routes>
