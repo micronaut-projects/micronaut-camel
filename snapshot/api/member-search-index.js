@@ -1,0 +1,1 @@
+memberSearchIndex = [{"p":"io.micronaut.camel.info","c":"MicronautCamelCoreModuleInfo","l":"MicronautCamelCoreModuleInfo()","u":"%3Cinit%3E()","k":"3"}];updateSearchResults();
