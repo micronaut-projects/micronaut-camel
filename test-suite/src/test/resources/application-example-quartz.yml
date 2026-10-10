@@ -1,0 +1,9 @@
+# Ports quartz/src/main/resources/application.properties
+camel:
+  main:
+    # give Camel a name
+    name: Quartz-to-Log
+
+# fire every second instead of every 5 seconds
+quartz:
+  cron: "0/1+*+*+*+*+?"

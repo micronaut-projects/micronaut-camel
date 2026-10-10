@@ -1,0 +1,86 @@
+/*
+ * Copyright 2017-2026 original authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.micronaut.camel.examples.fhirauthtx;
+
+import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
+import io.micronaut.context.annotation.Requires;
+import jakarta.inject.Singleton;
+import org.apache.camel.LoggingLevel;
+import org.apache.camel.RuntimeCamelException;
+import org.apache.camel.builder.RouteBuilder;
+import org.apache.http.ProtocolException;
+import org.hl7.fhir.dstu3.model.Bundle;
+import org.hl7.fhir.dstu3.model.Identifier;
+import org.hl7.fhir.dstu3.model.Patient;
+
+import java.util.List;
+
+/**
+ * A simple Camel route that triggers from a file and pushes to a FHIR server.
+ * <p/>
+ * Use <tt>@Singleton</tt> to make Camel auto detect this route when starting.
+ */
+@Singleton
+@Requires(env = "example-fhir-auth-tx")
+public class MyCamelRouter extends RouteBuilder {
+
+    @Override
+    public void configure() throws Exception {
+        // connection/protocol failures talking to the FHIR server: retry a few times with
+        // backoff, then give up on this file so it isn't reprocessed forever on every poll
+        onException(ProtocolException.class, FhirClientConnectionException.class, RuntimeCamelException.class)
+                .maximumRedeliveries(3)
+                .redeliveryDelay(2000)
+                .backOffMultiplier(2)
+                .useExponentialBackOff()
+                .handled(true)
+                .log(LoggingLevel.ERROR, "Error connecting to FHIR server with URL:{{serverUrl}}, please check the application.properties file and that the server is reachable ${exception.message}")
+                .end();
+
+        // anything else unexpected: log and move on instead of looping on the same file
+        onException(Exception.class)
+                .handled(true)
+                .log(LoggingLevel.ERROR, "Error processing ${file:name}: ${exception.message}")
+                .end();
+
+        from("file:{{input}}?moveFailed=.error").routeId("fhir-example")
+                .log("Converting ${file:name}")
+                .unmarshal().csv()
+                .process(exchange -> {
+
+                    Bundle bundleTest = new Bundle();
+                    bundleTest.setId("bundle-simplified-001");
+                    bundleTest.setIdentifier(new Identifier().setValue("001"));
+                    bundleTest.setType(org.hl7.fhir.dstu3.model.Bundle.BundleType.TRANSACTION);
+
+                    @SuppressWarnings("unchecked")
+                    List<List<String>> patients = (List<List<String>>) exchange.getIn().getBody();
+                    for (List<String> patient: patients) {
+                        Patient fhirPatient = new Patient();
+                        fhirPatient.setId(patient.get(0));
+                        fhirPatient.addName().addGiven(patient.get(1));
+                        fhirPatient.getNameFirstRep().setFamily(patient.get(2));
+                        bundleTest.addEntry().setResource(fhirPatient).getRequest().setMethod(Bundle.HTTPVerb.POST);
+                    }
+                    exchange.getIn().setBody(bundleTest);
+                })
+                // create Patient in our FHIR server
+                .to("fhir://transaction/withBundle?inBody=bundle&serverUrl={{serverUrl}}&username={{serverUser}}&password={{serverPassword}}&fhirVersion={{fhirVersion}}")
+                // log the outcome
+                .log("Patients created successfully: ${body}");
+    }
+
+}
