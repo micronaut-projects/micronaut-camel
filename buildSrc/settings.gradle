@@ -1,0 +1,10 @@
+rootProject.name = 'buildSrc'
+
+// -PupstreamBuilds (see AGENTS.md): a checkout of micronaut-build among the builds provides the
+// micronaut-kotlin-build-plugins dependency of the convention plugins
+providers.gradleProperty('upstreamBuilds').getOrElse('').split(',')*.trim().findAll().each { path ->
+    File dir = new File(settingsDir.parentFile, path)
+    if (new File(dir, 'micronaut-gradle-plugins').directory) {
+        includeBuild(dir)
+    }
+}

@@ -13,10 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * The services of the Python guide samples.
- */
-@NullMarked
-package io.micronaut.camel.testservices;
+package io.micronaut.camel.jsonvalidation;
 
-import org.jspecify.annotations.NullMarked;
+import io.micronaut.camel.docs.jsonschema.Order;
+import io.micronaut.jsonschema.JsonSchema;
+import io.micronaut.serde.annotation.Serdeable;
+import jakarta.validation.constraints.NotBlank;
+
+import java.util.List;
+
+/**
+ * A type whose schema references the schema of another type, {@link Order}, by its classpath URI.
+ *
+ * @param reference The reference of the consignment
+ * @param orders    The orders
+ */
+@JsonSchema(title = "Consignment")
+@Serdeable
+public record Consignment(@NotBlank String reference, List<Order> orders) {
+}

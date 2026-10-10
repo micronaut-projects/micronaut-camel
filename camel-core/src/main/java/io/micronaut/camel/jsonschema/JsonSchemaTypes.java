@@ -23,10 +23,10 @@ import io.micronaut.core.beans.BeanIntrospection;
 import io.micronaut.core.beans.BeanIntrospector;
 import io.micronaut.core.util.StringUtils;
 import io.micronaut.jsonschema.JsonSchema;
+import io.micronaut.jsonschema.naming.JsonSchemaNaming;
 import jakarta.inject.Singleton;
 import org.jspecify.annotations.Nullable;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -50,7 +50,7 @@ final class JsonSchemaTypes {
      * Whether the JSON schema integration is enabled.
      */
     static final String ENABLED = "micronaut.camel.json-schema.enabled";
-    private static final String SUFFIX = ".schema.json";
+    private static final String SUFFIX = JsonSchemaNaming.SUFFIX;
     private static final String SLASH = "/";
 
     private final String outputLocation;
@@ -120,48 +120,18 @@ final class JsonSchemaTypes {
     }
 
     /**
-     * The file name of a schema, as the annotation processor computes it: from the {@code uri} of the
-     * annotation, or else from its title or the simple name of the type, in kebab case.
+     * The file name of a schema, as the annotation processor names it, and as the Micronaut JSON Schema loader
+     * finds it by class (with {@link JsonSchemaNaming}): from the {@code uri} of the annotation, or else from its
+     * title or the simple name of the type (with the names of the types it is nested in), in kebab case.
      *
      * @param type       The type
      * @param annotation The annotation
      * @return The name of the schema file
      */
     String fileName(Class<?> type, AnnotationValue<JsonSchema> annotation) {
-        String uri = annotation.stringValue("uri").orElse(null);
-        String id;
-        if (uri == null) {
-            String simpleName = type.getName().substring(type.getName().lastIndexOf('.') + 1).replace('$', '.');
-            id = kebabCase(annotation.stringValue("title").orElse(simpleName)) + SUFFIX;
-        } else if (uri.contains("://")) {
-            id = URI.create(uri).getPath();
-            id = id.startsWith(SLASH) ? id.substring(1) : id;
-            id = id.startsWith(outputLocation) ? id.substring(outputLocation.length()) : id;
-        } else {
-            id = uri + SUFFIX;
-        }
-        return id.startsWith(SLASH) ? id.substring(1) : id;
-    }
-
-    private static String kebabCase(String value) {
-        StringBuilder result = new StringBuilder();
-        boolean newWord = true;
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
-            if (c == '.') {
-                continue;
-            }
-            if (Character.isUpperCase(c)) {
-                if (!newWord) {
-                    result.append('-');
-                }
-                newWord = true;
-            } else {
-                newWord = false;
-            }
-            result.append(Character.toLowerCase(c));
-        }
-        return result.toString();
+        String title = JsonSchemaNaming.title(annotation.stringValue("title").orElse(null), JsonSchemaNaming.simpleName(type));
+        String uri = JsonSchemaNaming.uri(title, annotation.stringValue("uri").orElse(null));
+        return JsonSchemaNaming.fileName(uri, null, outputLocation);
     }
 
     /**

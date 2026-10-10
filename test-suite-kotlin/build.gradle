@@ -1,21 +1,13 @@
 plugins {
     id 'io.micronaut.build.internal.kotlin-ksp'
     id 'io.micronaut.build.internal.camel-tests'
-    id 'jvm-test-suite'
-}
-
-// The JSON schema samples use camel-json-validator, whose version of the NetworkNT JSON Schema library is
-// incompatible with that of the Micronaut JSON Schema validator, which micronaut-mcp brings to the other
-// samples: they run in a test suite of their own, from the same sources.
-def jsonSchemaSamples = 'io/micronaut/camel/docs/jsonschema/**'
-kotlin.sourceSets.named('test') {
-    kotlin.exclude(jsonSchemaSamples)
 }
 
 dependencies {
     kspTest(mn.micronaut.inject.kotlin)
     kspTest(projects.micronautCamelProcessor)
     kspTest(mnValidation.micronaut.validation.processor)
+    kspTest(mnJsonSchema.micronaut.json.schema.processor)
     testImplementation(projects.micronautCamelCore)
     testImplementation(projects.micronautCamelPlatformHttp)
     testImplementation(projects.micronautCamelTest)
@@ -27,6 +19,7 @@ dependencies {
     testImplementation(libs.camel.endpointdsl)
     testImplementation(libs.camel.file)
     testImplementation(libs.camel.jackson3)
+    testImplementation(libs.camel.json.validator)
     testImplementation(libs.camel.mock)
     testImplementation(libs.camel.kafka)
     testImplementation(libs.camel.log)
@@ -59,71 +52,13 @@ dependencies {
         exclude(group: 'org.hibernate.validator')
     }
     testImplementation(mnMcp.micronaut.mcp.server.java.sdk)
+    testImplementation(mnJsonSchema.micronaut.json.schema.annotations)
+    testImplementation(mnJsonSchema.micronaut.json.schema.validation)
+    testImplementation(mnSerde.micronaut.serde.api)
     testImplementation(libs.camel.ai.tool)
     testImplementation(libs.camel.mcp.server.api)
     testRuntimeOnly(mnLogging.logback.classic)
     testRuntimeOnly(mn.micronaut.json.core)
     testRuntimeOnly(mnSql.h2)
     testRuntimeOnly(mn.snakeyaml)
-}
-
-testing {
-    suites {
-        jsonSchemaTest(JvmTestSuite) {
-            useJUnitJupiter()
-            dependencies {
-                implementation(projects.micronautCamelCore)
-                implementation(mnTest.micronaut.test.junit5)
-                implementation(mnJsonSchema.micronaut.json.schema.annotations)
-                implementation(mnSerde.micronaut.serde.jackson)
-                implementation(mnValidation.validation)
-                implementation(libs.camel.direct)
-                implementation(libs.camel.json.validator)
-                implementation(libs.camel.mock)
-                runtimeOnly(mnLogging.logback.classic)
-            }
-        }
-    }
-}
-
-kotlin.sourceSets.named('jsonSchemaTest') {
-    kotlin.srcDir('src/test/kotlin')
-    kotlin.include(jsonSchemaSamples)
-}
-
-dependencies {
-    kspJsonSchemaTest(mn.micronaut.inject.kotlin)
-    kspJsonSchemaTest(mnJsonSchema.micronaut.json.schema.processor)
-    kspJsonSchemaTest(mnSerde.micronaut.serde.processor)
-}
-
-// KSP processes whole source directories, ignoring the filters of the source sets (and takes the Kotlin source
-// directories, which the Kotlin plugin adds to the Java source sets, as Java source roots too): the KSP task of
-// each suite processes a copy of the sources that suite compiles, and no Java sources, as the suite has none.
-def kspTestSources = tasks.register('kspTestSources', Sync) {
-    from('src/test/kotlin') {
-        exclude(jsonSchemaSamples)
-    }
-    into(layout.buildDirectory.dir('ksp-sources/test'))
-}
-def kspJsonSchemaTestSources = tasks.register('kspJsonSchemaTestSources', Sync) {
-    from('src/test/kotlin') {
-        include(jsonSchemaSamples)
-    }
-    into(layout.buildDirectory.dir('ksp-sources/jsonSchemaTest'))
-}
-afterEvaluate {
-    // the KSP plugin registers its tasks, and sets their source directories, once the project is evaluated
-    tasks.named('kspTestKotlin') {
-        kspConfig.sourceRoots.setFrom(kspTestSources)
-        kspConfig.javaSourceRoots.setFrom()
-    }
-    tasks.named('kspJsonSchemaTestKotlin') {
-        kspConfig.sourceRoots.setFrom(kspJsonSchemaTestSources)
-        kspConfig.javaSourceRoots.setFrom()
-    }
-}
-
-tasks.named('check') {
-    dependsOn(testing.suites.jsonSchemaTest)
 }

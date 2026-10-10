@@ -15,6 +15,7 @@
  */
 package io.micronaut.camel.processor;
 
+import io.micronaut.sourcegen.model.TypeDef;
 import org.apache.camel.catalog.DefaultCamelCatalog;
 import org.apache.camel.tooling.model.BaseOptionModel;
 import org.apache.camel.tooling.model.ComponentModel;
@@ -35,42 +36,48 @@ class ValuesSchemaGeneratorTest {
     private final DefaultCamelCatalog catalog = new DefaultCamelCatalog(true);
 
     @Test
-    void listsThePossibleValuesOfComponentOptions() {
+    void declaresTheValuesOfComponentOptionsWithAllowedValues() {
         ComponentModel kafka = catalog.componentModel("kafka");
         Map<String, BaseOptionModel> options = ConfigurationGenerator.options(List.copyOf(kafka.getComponentOptions()), BaseOptionModel::getName);
-        String schema = ValuesSchemaGenerator.schema("test.KafkaComponentConfiguration", "camel.component.kafka", options, ValuesSchemaGeneratorTest::isEnum);
 
-        assertTrue(schema.contains("\"x-micronaut\":{\"prefix\":\"camel.component.kafka\",\"type\":\"test.KafkaComponentConfiguration\""), schema);
-        assertTrue(schema.contains("\"auto-offset-reset\":{\"type\":\"string\",\"enum\":[\"latest\",\"earliest\",\"none\"]"), schema);
-        assertTrue(schema.contains("\"x-micronaut-path\":\"camel.component.kafka.auto-offset-reset\""), schema);
+        // an option of type String, which Camel compares exactly: Micronaut writes @AllowedValues as the enum
+        assertEquals(List.of("latest", "earliest", "none"),
+            ValuesSchemaGenerator.allowedValues(options.get("autoOffsetReset"), ValuesSchemaGeneratorTest::isEnum));
         // booleans are not listed
-        assertFalse(schema.contains("\"allow-manual-commit\""), schema);
+        assertNull(ValuesSchemaGenerator.allowedValues(options.get("allowManualCommit"), ValuesSchemaGeneratorTest::isEnum));
+        String schema = ValuesSchemaGenerator.schema("test.KafkaComponentConfiguration", "camel.component.kafka", options, ValuesSchemaGeneratorTest::isEnum);
+        assertTrue(schema == null || !schema.contains("\"auto-offset-reset\""), schema);
     }
 
     @Test
-    void listsTheValuesOfEnumOptionsAsStrings() {
+    void declaresTheValuesOfEnumOptionsAsStrings() {
         ComponentModel jms = catalog.componentModel("jms");
         Map<String, BaseOptionModel> options = ConfigurationGenerator.options(List.copyOf(jms.getComponentOptions()), BaseOptionModel::getName);
-        String schema = ValuesSchemaGenerator.schema("test.JmsComponentConfiguration", "camel.component.jms", options, ValuesSchemaGeneratorTest::isEnum);
 
         // an enum option of an int type is a String property, as Camel converts the value
-        assertTrue(schema.contains("\"priority\":{\"type\":\"string\",\"enum\":[\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\",\"9\"]"), schema);
+        assertEquals(TypeDef.STRING, ConfigurationGenerator.type(options.get("priority")));
+        assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8", "9"),
+            ValuesSchemaGenerator.allowedValues(options.get("priority"), ValuesSchemaGeneratorTest::isEnum));
     }
 
     @Test
-    void listsThePossibleValuesOfMainOptions() {
+    void listsTheValuesOfEnumOptionsIgnoringCase() {
         List<MainModel.MainOptionModel> main = CamelConfigVisitor.mainGroups(catalog.mainModel()).get("camel.main");
-        String schema = ValuesSchemaGenerator.schema("test.CamelMainConfiguration", "camel.main",
-            ConfigurationGenerator.options(main, option -> option.getName().substring("camel.main.".length())),
-            ValuesSchemaGeneratorTest::isEnum);
+        Map<String, MainModel.MainOptionModel> options = ConfigurationGenerator.options(main, option -> option.getName().substring("camel.main.".length()));
+        String schema = ValuesSchemaGenerator.schema("test.CamelMainConfiguration", "camel.main", options, ValuesSchemaGeneratorTest::isEnum);
 
-        // an option of a Java enum type, which Camel converts ignoring case
+        assertTrue(schema.contains("\"x-micronaut\":{\"prefix\":\"camel.main\",\"type\":\"test.CamelMainConfiguration\""), schema);
+        // an option of a Java enum type, which Camel converts ignoring case, what @AllowedValues cannot express
+        assertNull(ValuesSchemaGenerator.allowedValues(options.get("jmxManagementStatisticsLevel"), ValuesSchemaGeneratorTest::isEnum));
         assertTrue(schema.contains("\"jmx-management-statistics-level\":{\"type\":\"string\","
             + "\"pattern\":\"^(?:[Ee][Xx][Tt][Ee][Nn][Dd][Ee][Dd]|[Dd][Ee][Ff][Aa][Uu][Ll][Tt]|[Rr][Oo][Uu][Tt][Ee][Ss][Oo][Nn][Ll][Yy]|[Oo][Ff][Ff])$\","
             + "\"examples\":[\"Extended\",\"Default\",\"RoutesOnly\",\"Off\"],"
             + "\"description\":\"One of Extended, Default, RoutesOnly, Off, ignoring case.\""), schema);
-        // an option of type String, which Camel compares exactly
-        assertTrue(schema.contains("\"uuid-generator\":{\"type\":\"string\",\"enum\":[\"classic\",\"default\",\"short\",\"simple\",\"off\"]"), schema);
+        assertTrue(schema.contains("\"x-micronaut-path\":\"camel.main.jmx-management-statistics-level\""), schema);
+        // an option of type String, which Camel compares exactly, has @AllowedValues instead
+        assertEquals(List.of("classic", "default", "short", "simple", "off"),
+            ValuesSchemaGenerator.allowedValues(options.get("uuidGenerator"), ValuesSchemaGeneratorTest::isEnum));
+        assertFalse(schema.contains("\"uuid-generator\""), schema);
     }
 
     @Test

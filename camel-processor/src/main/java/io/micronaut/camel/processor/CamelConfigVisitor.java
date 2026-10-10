@@ -118,7 +118,8 @@ public final class CamelConfigVisitor implements TypeElementVisitor<Object, Obje
                 }
                 ArtifactModel<?> model = kind.model(camelCatalog, name);
                 if (fromArtifacts(model, artifacts)) {
-                    ObjectDef configuration = ConfigurationGenerator.extensionConfiguration(packageName, kind, model, context);
+                    ObjectDef configuration = ConfigurationGenerator.extensionConfiguration(packageName, kind, model, context,
+                        type -> isEnum(context, type));
                     generated.add(configuration);
                     writeValuesSchema(element, context, configuration.getName(), kind.prefix(model.getName()),
                         ConfigurationGenerator.options(kind.options(model), option -> option.getName()));
@@ -131,7 +132,7 @@ public final class CamelConfigVisitor implements TypeElementVisitor<Object, Obje
             for (Map.Entry<String, List<MainModel.MainOptionModel>> group : mainGroups(camelCatalog.mainModel()).entrySet()) {
                 if (mainIncluded.test(group.getKey())) {
                     ObjectDef configuration = ConfigurationGenerator.mainConfiguration(packageName, group.getKey(),
-                        groupDescription(camelCatalog.mainModel(), group.getKey()), group.getValue());
+                        groupDescription(camelCatalog.mainModel(), group.getKey()), group.getValue(), type -> isEnum(context, type));
                     generated.add(configuration);
                     writeValuesSchema(element, context, configuration.getName(), Names.kebabPrefix(group.getKey()),
                         ConfigurationGenerator.options(group.getValue(), option -> option.getName().substring(group.getKey().length() + 1)));
@@ -148,7 +149,8 @@ public final class CamelConfigVisitor implements TypeElementVisitor<Object, Obje
     }
 
     /**
-     * Writes the schema of the possible values of the options of a generated configuration class, if any.
+     * Writes the schema of the possible values of the options of a generated configuration class that
+     * {@code @AllowedValues} cannot express (those of the Java enum types, matched ignoring case), if any.
      */
     private static void writeValuesSchema(ClassElement element, VisitorContext context, String className, String prefix,
                                           Map<String, ? extends BaseOptionModel> options) {

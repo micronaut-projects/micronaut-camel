@@ -20,7 +20,7 @@ dependency:org.apache.camel:camel-json-validator[]
 
 snippet::io.micronaut.camel.docs.jsonschema.OrderRoutes[tags="validator", indent=0, title="Validating messages against a generated schema"]
 
-<1> The schema is a classpath resource of the application.
+<1> The schema is a classpath resource of the application. The generated schemas refer to the schemas of other types by their `classpath:` URIs, which the validator resolves from the classpath too.
 
 A message that does not match the schema fails with Camel's `JsonValidationException`, a `ValidationException` that lists the errors, which an error handler or `onException` handles as any other exception.
 
@@ -44,7 +44,7 @@ dependency:io.micronaut.jsonschema:micronaut-json-schema-validation[]
 
 Without it, they validate with a `json-validator` endpoint of the schema, so `camel-json-validator` is needed, and fail with its `JsonValidationException`. A validator that a route declares for the type, with `validator().type(Order.class)`, replaces the one of Micronaut Camel.
 
-WARNING: `camel-json-validator` uses version 2 of the NetworkNT JSON Schema library, on Jackson 2, and `micronaut-json-schema-validation` uses version 3, on Jackson 3, in the same packages: an application cannot use both. Micronaut MCP, for one, brings `micronaut-json-schema-validation`. With it, validate by type, which then uses the Micronaut validator, instead of with `json-validator` endpoints.
+An application can have both: `json-validator` endpoints then validate with Camel's component, and the validators of the types with the Micronaut validator. Micronaut MCP, for one, brings `micronaut-json-schema-validation`.
 
 Set `micronaut.camel.json-schema.enabled` to `false` to disable the `jsonschema:` resources and the validators.
 

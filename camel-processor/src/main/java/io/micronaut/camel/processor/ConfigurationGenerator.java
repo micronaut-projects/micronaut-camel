@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Generates a {@code @ConfigurationProperties} class that documents the options of a Camel
@@ -54,11 +55,21 @@ final class ConfigurationGenerator {
 
     private static final String REQUIRES_PACKAGE = "io.micronaut.camel.requires";
     private static final ClassTypeDef NULLABLE = ClassTypeDef.of("org.jspecify.annotations.Nullable");
+    private static final ClassTypeDef ALLOWED_VALUES = ClassTypeDef.of("io.micronaut.core.annotation.AllowedValues");
 
     private ConfigurationGenerator() {
     }
 
-    static ClassDef extensionConfiguration(String packageName, CamelKind kind, ArtifactModel<?> model, VisitorContext context) {
+    /**
+     * @param packageName The package of the class
+     * @param kind        The kind of the extension
+     * @param model       The model of the extension
+     * @param context     The visitor context
+     * @param enumType    Whether a Java type, by name, is an enum
+     * @return The configuration class of the extension
+     */
+    static ClassDef extensionConfiguration(String packageName, CamelKind kind, ArtifactModel<?> model, VisitorContext context,
+                                           Predicate<String> enumType) {
         String name = model.getName();
         String prefix = kind.prefix(name);
         ClassDef.ClassDefBuilder builder = ClassDef.builder(packageName + "." + Names.typeName(name) + kind.typeSuffix() + "Configuration")
@@ -81,17 +92,26 @@ final class ConfigurationGenerator {
         Set<String> names = new HashSet<>();
         for (BaseOptionModel option : kind.options(model)) {
             if (names.add(option.getName())) {
-                addOption(builder, option.getName(), option);
+                addOption(builder, option.getName(), option, enumType);
             }
         }
         if (names.add("enabled")) {
             addProperty(builder, "enabled", TypeDef.of(Boolean.class),
-                "Whether Camel applies the options under {@code " + prefix + "}.", "true", false);
+                "Whether Camel applies the options under {@code " + prefix + "}.", "true", false, null);
         }
         return builder.build();
     }
 
-    static ClassDef mainConfiguration(String packageName, String group, @Nullable String description, List<MainModel.MainOptionModel> options) {
+    /**
+     * @param packageName The package of the class
+     * @param group       The camel-main group
+     * @param description The description of the group
+     * @param options     The options of the group
+     * @param enumType    Whether a Java type, by name, is an enum
+     * @return The configuration class of the group
+     */
+    static ClassDef mainConfiguration(String packageName, String group, @Nullable String description, List<MainModel.MainOptionModel> options,
+                                      Predicate<String> enumType) {
         String prefix = Names.kebabPrefix(group);
         ClassDef.ClassDefBuilder builder = ClassDef.builder(packageName + "." + Names.typeName(group) + "Configuration")
             .addModifiers(Modifier.PUBLIC)
@@ -102,7 +122,7 @@ final class ConfigurationGenerator {
         for (MainModel.MainOptionModel option : options) {
             String name = option.getName().substring(group.length() + 1);
             if (names.add(name)) {
-                addOption(builder, name, option);
+                addOption(builder, name, option, enumType);
             }
         }
         return builder.build();
@@ -127,7 +147,7 @@ final class ConfigurationGenerator {
             .addAnnotation(AnnotationDef.builder(ConfigurationProperties.class).addMember("value", prefix).build());
     }
 
-    private static void addOption(ClassDef.ClassDefBuilder builder, String name, BaseOptionModel option) {
+    private static void addOption(ClassDef.ClassDefBuilder builder, String name, BaseOptionModel option, Predicate<String> enumType) {
         StringBuilder doc = new StringBuilder(Names.javadoc(description(option)));
         List<String> enums = option.getEnums();
         if (enums != null && !enums.isEmpty() && !"boolean".equals(option.getType())) {
@@ -148,11 +168,12 @@ final class ConfigurationGenerator {
             doc.append(" This option is sensitive.");
         }
         String defaultValue = defaultValue(option);
-        addProperty(builder, name, type, doc.toString(), defaultValue, option.isDeprecated());
+        addProperty(builder, name, type, doc.toString(), defaultValue, option.isDeprecated(),
+            ValuesSchemaGenerator.allowedValues(option, enumType));
     }
 
     private static void addProperty(ClassDef.ClassDefBuilder builder, String name, TypeDef type, String doc,
-                                    @Nullable String defaultValue, boolean deprecated) {
+                                    @Nullable String defaultValue, boolean deprecated, @Nullable List<String> allowedValues) {
         String fieldName = SourceVersion.isKeyword(name) || !SourceVersion.isIdentifier(name) ? "option" + Names.typeName(name) : name;
         String accessor = Names.typeName(NameUtils.capitalize(name));
         String fullDoc = defaultValue != null ? doc + " Default: {@code " + Names.javadoc(defaultValue) + "}." : doc;
@@ -172,6 +193,10 @@ final class ConfigurationGenerator {
             .addJavadoc(fullDoc + "\n\n@param " + fieldName + " The value");
         if (defaultValue != null) {
             setter.addAnnotation(AnnotationDef.builder(Bindable.class).addMember("defaultValue", defaultValue).build());
+        }
+        if (allowedValues != null) {
+            // written as the enum of the property in the configuration schema of the class
+            setter.addAnnotation(AnnotationDef.builder(ALLOWED_VALUES).addMember("value", List.<Object>copyOf(allowedValues)).build());
         }
         if (deprecated) {
             getter.addAnnotation(Deprecated.class);
