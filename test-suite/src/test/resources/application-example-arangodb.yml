@@ -1,0 +1,12 @@
+# Ports arangodb/src/main/resources/application.properties
+camel:
+  main:
+    name: ArangoDB
+  component:
+    arangodb:
+      # the test replaces the host and the port with those of the server it starts
+      host: localhost
+      port: 8529
+      document-collection: myCollection
+      user: root
+      password: password

@@ -42,6 +42,7 @@ micronaut-aws = "5.1.1"
 micronaut-azure = "6.2.0"
 groovy = "4.0.24"
 spock = "2.3-groovy-4.0"
+hapi-hl7v2 = "2.6.0"
 
 # Managed versions appear in the BOM
 managed-camel = "4.22.1"
@@ -82,9 +83,20 @@ micronaut-sql = { module = "io.micronaut.sql:micronaut-sql-bom", version.ref = "
 boms-camel = { module = "org.apache.camel:camel-bom", version.ref = "managed-camel" }
 
 # Other libraries used by the project but non managed
+# the HL7 v2.4 structures of the fhir example, at the version of the hapi-base that camel-hl7 uses
+hapi-structures-v24 = { module = "ca.uhn.hapi:hapi-structures-v24", version.ref = "hapi-hl7v2" }
 
 # Versions from boms-camel
 camel-main = { module = "org.apache.camel:camel-main" }
+camel-arangodb = { module = "org.apache.camel:camel-arangodb" }
+camel-docling = { module = "org.apache.camel:camel-docling" }
+camel-hl7 = { module = "org.apache.camel:camel-hl7" }
+camel-infinispan = { module = "org.apache.camel:camel-infinispan" }
+camel-kamelet = { module = "org.apache.camel:camel-kamelet" }
+camel-lra = { module = "org.apache.camel:camel-lra" }
+camel-master = { module = "org.apache.camel:camel-master" }
+camel-reactive-streams = { module = "org.apache.camel:camel-reactive-streams" }
+camel-resilience4j = { module = "org.apache.camel:camel-resilience4j" }
 camel-amqp = { module = "org.apache.camel:camel-amqp" }
 camel-avro = { module = "org.apache.camel:camel-avro" }
 camel-ai-tool = { module = "org.apache.camel:camel-ai-tool" }

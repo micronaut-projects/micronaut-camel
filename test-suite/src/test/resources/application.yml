@@ -16,6 +16,9 @@ micronaut:
     # configuring it explicitly makes it unique when all of them are on the test classpath
     consumer:
       type: fixed
+infinispan:
+  # the RemoteCacheManager of micronaut-cache-infinispan is only used by the infinispan example
+  enabled: false
 endpoints:
   health:
     rabbitmq:

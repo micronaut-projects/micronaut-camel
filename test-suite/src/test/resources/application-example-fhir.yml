@@ -1,0 +1,13 @@
+# Ports fhir/src/main/resources/application.properties
+# the test replaces it with the URL of the FHIR server it starts
+serverUrl: http://localhost:8081/fhir
+
+fhirVersion: R4
+
+# the test replaces it with a temporary directory
+input: target/work/fhir/input
+
+camel:
+  main:
+    # the name of Camel
+    name: MyCamel

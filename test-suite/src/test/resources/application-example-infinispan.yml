@@ -1,0 +1,27 @@
+# Ports infinispan/src/main/resources/application.properties
+camel:
+  main:
+    name: Infinispan
+  component:
+    infinispan:
+      # the embedding store is enabled when camel-langchain4j-embeddings is on the classpath, as in this test suite
+      embedding-store-enabled: false
+
+# The RemoteCacheManager of micronaut-cache-infinispan, which Camel autowires into the infinispan component,
+# instead of the infinispan.* properties of the RemoteCacheManager bean method; the test sets the server and
+# the credentials
+infinispan:
+  enabled: true
+  client:
+    hotrod:
+      config-file: classpath:examples/infinispan/hotrod-client.properties
+      server:
+        host: localhost
+        port: 11222
+      security:
+        authentication:
+          username: admin
+          password: password
+          server-name: infinispan
+          sasl-mechanism: SCRAM-SHA-512
+          realm: default

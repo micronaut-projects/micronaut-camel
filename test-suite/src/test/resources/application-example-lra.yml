@@ -1,0 +1,9 @@
+# Ports the camel.lra options of saga/saga-app/src/main/resources/application.yml
+camel:
+  main:
+    name: Camel-saga
+  lra:
+    enabled: true
+    coordinator-url: http://localhost:8080
+    # the participant routes are served by the Micronaut HTTP server, at the root
+    local-participant-url: http://localhost:8084

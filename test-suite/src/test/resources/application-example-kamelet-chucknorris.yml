@@ -1,0 +1,10 @@
+# Ports kamelet-chucknorris/src/main/resources/application.yaml
+camel:
+  main:
+    name: ChuckCamel
+  kamelet:
+    chuck-norris-source:
+      # the joke service is a controller of this application instead of https://api.chucknorris.io
+      url: http://localhost:${micronaut.server.port}/jokes/random
+      # a joke every second instead of every 10 seconds
+      period: 1000

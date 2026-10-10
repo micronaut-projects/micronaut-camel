@@ -1,0 +1,15 @@
+# Ports docling/src/main/resources/application.properties
+camel:
+  main:
+    name: DoclingServe
+
+# the test replaces the directories with temporary directories
+documents:
+  directory: src/main/resources/documents
+output:
+  directory: src/main/resources/output
+
+# docling-serve is a controller of this application instead of http://localhost:5001
+docling:
+  serve:
+    url: http://localhost:${micronaut.server.port}
