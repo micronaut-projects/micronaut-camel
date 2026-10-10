@@ -4,6 +4,13 @@ pluginManagement {
         mavenCentral()
     }
     includeBuild('settings-build-logic')
+    // -PupstreamBuilds=<dir>,<dir>... builds against checkouts of unreleased upstream changes (see AGENTS.md): a
+    // checkout of micronaut-build provides the Gradle plugins, the others replace their published libraries below
+    settings.providers.gradleProperty('upstreamBuilds').getOrElse('').split(',')*.trim().findAll().each { path ->
+        if (new File(settings.settingsDir, "${path}/micronaut-gradle-plugins").directory) {
+            includeBuild(path)
+        }
+    }
 }
 
 plugins {
@@ -20,6 +27,27 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = 'camel-parent'
+
+// -PupstreamBuilds: the checkouts of the libraries, such as Micronaut core or Micronaut JSON Schema, substitute
+// their published modules (see AGENTS.md)
+providers.gradleProperty('upstreamBuilds').getOrElse('').split(',')*.trim().findAll().each { path ->
+    File dir = new File(settingsDir, path)
+    if (!dir.directory) {
+        throw new GradleException("upstreamBuilds: ${dir} is not a directory")
+    }
+    if (!new File(dir, 'micronaut-gradle-plugins').directory) {
+        // the catalogs of the included builds (mn, mnJsonSchema...) are imported while the settings are evaluated, so
+        // Gradle cannot build them: generate them first (run generateCatalogAsToml in the build when its BOM changes)
+        if (!(dir.listFiles() ?: []).any { new File(it, 'build/version-catalog/libs.versions.toml').file }) {
+            println "upstreamBuilds: generating the version catalog of ${dir.canonicalPath}"
+            providers.exec {
+                workingDir(dir)
+                commandLine('./gradlew', '-q', 'generateCatalogAsToml')
+            }.result.get().assertNormalExitValue()
+        }
+        includeBuild(dir)
+    }
+}
 
 include 'camel-aot'
 include 'camel-bom'
