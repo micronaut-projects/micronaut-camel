@@ -2,5 +2,15 @@ introduction:
   title: Introduction
 quickStart:
   title: Quick Start
+routes:
+  title: Routes
+configuration:
+  title: Configuration
+beans:
+  title: Beans and the Camel Registry
+lifecycle:
+  title: Lifecycle
+testing:
+  title: Testing
 repository: Repository
 releaseHistory: Release History

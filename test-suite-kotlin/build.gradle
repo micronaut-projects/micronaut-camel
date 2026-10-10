@@ -1,0 +1,18 @@
+plugins {
+    id 'io.micronaut.build.internal.kotlin-ksp'
+    id 'io.micronaut.build.internal.camel-tests'
+}
+
+dependencies {
+    kspTest(mn.micronaut.inject.kotlin)
+    testImplementation(projects.micronautCamelCore)
+    testImplementation(projects.micronautCamelTest)
+    testImplementation(libs.camel.bean)
+    testImplementation(libs.camel.direct)
+    testImplementation(libs.camel.endpointdsl)
+    testImplementation(libs.camel.log)
+    testImplementation(libs.camel.seda)
+    testImplementation(libs.camel.yaml.dsl)
+    testImplementation(mnTest.micronaut.test.junit5)
+    testRuntimeOnly(mnLogging.logback.classic)
+}

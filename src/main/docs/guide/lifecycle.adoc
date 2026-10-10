@@ -1,0 +1,27 @@
+The `CamelContext` is a bean. It is configured when it is created, and Camel adds the routes and starts when the application starts. Camel stops, waiting for in-flight messages up to `camel.main.shutdown-timeout`, when the application stops.
+
+The following Camel types are beans, so they can be injected:
+
+[cols="1,2"]
+|===
+|Type |Purpose
+
+|`CamelContext`
+|The Camel context
+
+|`ProducerTemplate`
+|Sends messages to endpoints
+
+|`FluentProducerTemplate`
+|Sends messages to endpoints with a fluent API
+
+|`ConsumerTemplate`
+|Receives messages from endpoints
+
+|`TypeConverter`
+|Camel's type converter
+|===
+
+Beans of type `MainListener` are notified as Camel is configured, started and stopped.
+
+An application that runs Camel without an HTTP server is kept running until it is stopped, as an HTTP server would be.

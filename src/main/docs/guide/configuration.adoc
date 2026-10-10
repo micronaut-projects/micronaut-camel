@@ -1,0 +1,28 @@
+Camel reads its configuration from the Micronaut environment, so Camel options can be set in any Micronaut property source: `application.yml`, environment variables, system properties or a distributed configuration source. The property names are those of https://camel.apache.org/components/next/others/main.html[Camel Main] and of the Camel components:
+
+[configuration]
+----
+camel:
+  main:
+    name: shop
+    shutdown-timeout: 30
+  component:
+    seda:
+      queue-size: 500
+----
+
+* `camel.main.*` configures the `CamelContext`, for example its name, the routes to load, stream caching and tracing.
+* `camel.component.<name>.*`, `camel.dataformat.<name>.*` and `camel.language.<name>.*` set options of a Camel component, data format or language.
+* Camel's other configuration groups, such as `camel.rest.*`, `camel.health.*`, `camel.ssl.*` and `camel.vault.*`, are also available.
+
+Camel logs a summary of the options it applied when the application starts.
+
+=== Property placeholders
+
+Camel's `{{name}}` property placeholders resolve against the Micronaut environment. A placeholder can declare a default value after a colon:
+
+snippet::io.micronaut.camel.docs.configuration.WelcomeRoutes[tags="routes", indent=0, title="A route using a property placeholder"]
+
+<1> `{{shop.welcome:Welcome}}` is the value of `shop.welcome`, or `Welcome` when it is not set.
+
+NOTE: Micronaut resolves `${...}` placeholders in configuration values, so a Camel Simple expression such as `${body}` cannot appear in a Micronaut configuration file. Write Simple expressions in routes, and refer to configuration from them with Camel's `{{...}}` placeholders.

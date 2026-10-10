@@ -1,0 +1,23 @@
+Camel's registry is the Micronaut application context. When a route refers to a bean by name, for example with a `bean:` endpoint, Camel finds:
+
+* a bean with a matching `@Named` qualifier, or
+* a bean without a qualifier whose simple class name matches the name, ignoring case, so `myBean` finds a bean of type `MyBean`
+
+snippet::io.micronaut.camel.docs.registry.Greeter[tags="bean", indent=0, title="A named bean"]
+
+snippet::io.micronaut.camel.docs.registry.GreeterRoutes[tags="routes", indent=0, title="Calling the bean by name"]
+
+<1> The `@Named` qualifier is the name used by routes.
+<2> The `bean:` endpoint invokes the `greet` method of the `greeter` bean.
+
+=== Autowiring
+
+Camel autowires options of components, data formats and languages that are marked as autowired, such as the `DataSource` of the `sql` component or the `ConnectionFactory` of the `jms` component, when exactly one bean of the option's type exists. When several Micronaut beans match, the bean annotated with `@Primary` is used.
+
+Camel also uses beans of its extension types: for example a bean of type `RoutePolicyFactory`, `EventNotifier`, `HealthCheckRepository` or `ThreadPoolProfile` is added to the `CamelContext`, and a single bean of a type such as `UuidGenerator` replaces Camel's default.
+
+NOTE: These beans are looked up while the `CamelContext` is created, so they cannot inject the `CamelContext`. Implement `CamelContextAware` instead, and Camel sets the context.
+
+=== Type conversion
+
+The type converters registered with Micronaut, for example beans of type `io.micronaut.core.convert.TypeConverter`, are also available to Camel when none of Camel's own converters applies.

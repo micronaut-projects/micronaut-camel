@@ -7,7 +7,8 @@ Micronaut Camel integrates Apache Camel 4 with Micronaut 5. It was created from 
 - `camel-core/` is the runtime integration, published as `micronaut-camel-core` (`useStandardizedProjectNames`).
 - `camel-test/` (`micronaut-camel-test`) adds Camel test annotations, such as `@MockEndpoints` and `@UseAdviceWith`, to `@MicronautTest` tests.
 - `camel-bom/` is the BOM. It imports `org.apache.camel:camel-bom`.
-- `buildSrc/src/main/groovy/io.micronaut.build.internal.camel-*.gradle` holds the convention plugins: `camel-base`, and `camel-module` for published modules.
+- `buildSrc/src/main/groovy/io.micronaut.build.internal.camel-*.gradle` holds the convention plugins: `camel-base`, `camel-module` for published modules, and `camel-tests` for the test suites.
+- `test-suite`, `test-suite-kotlin` (KSP) and `test-suite-groovy` (Spock) hold the guide samples. Every sample is a `snippet::` with the same fully qualified name, under `io.micronaut.camel.docs`, in each suite.
 - `.agents/skills/` is shared agent guidance synced from the template.
 
 ## Scope
