@@ -1,0 +1,15 @@
+# Ports rabbitmq/src/main/resources/application.properties
+camel:
+  main:
+    name: RabbitCamel
+  component:
+    spring-rabbitmq:
+      # declare the exchange, queue and binding of the routes
+      auto-declare: true
+
+# Micronaut RabbitMQ settings, spring.rabbitmq.* in the original; the test sets them to its broker
+rabbitmq:
+  host: 127.0.0.1
+  port: 5672
+  username: guest
+  password: guest

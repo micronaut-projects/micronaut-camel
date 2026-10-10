@@ -40,4 +40,8 @@ micronautBuild {
     importMicronautCatalog("micronaut-serde")
     importMicronautCatalog("micronaut-micrometer")
     importMicronautCatalog("micronaut-tracing")
+    importMicronautCatalog("micronaut-jms")
+    importMicronautCatalog("micronaut-kafka")
+    importMicronautCatalog("micronaut-nats")
+    importMicronautCatalog("micronaut-rabbitmq")
 }

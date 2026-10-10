@@ -13,6 +13,7 @@ dependencies {
     testImplementation(libs.camel.direct)
     testImplementation(libs.camel.endpointdsl)
     testImplementation(libs.camel.jackson3)
+    testImplementation(libs.camel.kafka)
     testImplementation(libs.camel.log)
     testImplementation(libs.camel.rest)
     testImplementation(libs.camel.health)
@@ -24,6 +25,9 @@ dependencies {
     testImplementation(mn.micronaut.jackson.databind)
     testImplementation(mn.micronaut.management)
     testImplementation(mnMicrometer.micronaut.micrometer.core)
+    testImplementation(mnKafka.micronaut.kafka)
+    testImplementation(platform(mnTest.boms.testcontainers))
+    testImplementation(libs.testcontainers.kafka)
     testImplementation(mnTest.micronaut.test.junit5)
     testRuntimeOnly(mnLogging.logback.classic)
 }

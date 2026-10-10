@@ -1,0 +1,11 @@
+# Ports widget-gadget/src/main/resources/application.properties
+# AMQP_REMOTE_URI, AMQP_SERVICE_USERNAME and AMQP_SERVICE_PASSWORD in the original;
+# the test sets them to its broker
+amqp:
+  remote-uri: amqp://localhost:5672
+  service:
+    username: guest
+    password: guest
+
+# the test replaces it with a temporary directory holding the orders
+input: target/work/widget-gadget/input

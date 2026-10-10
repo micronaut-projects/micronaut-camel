@@ -1,0 +1,12 @@
+# Ports paho-mqtt5-shared-subscriptions/src/main/resources/application.properties
+# broker.url of the original is now the mqtt.client.server-uri of Micronaut MQTT, from which
+# micronaut-camel configures the paho-mqtt5 component; the test sets it to its broker
+mqtt:
+  client:
+    server-uri: tcp://localhost:1883
+
+consumer:
+  topic: $share/gr1/topic
+producer:
+  topic: topic
+  period: 1000

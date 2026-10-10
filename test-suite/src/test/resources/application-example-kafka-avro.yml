@@ -1,0 +1,13 @@
+# Ports kafka-avro/src/main/resources/application.properties
+# kafka.bootstrap.url of the original is now the kafka.bootstrap.servers of Micronaut Kafka,
+# from which micronaut-camel configures the kafka component; the test sets it to its broker
+kafka:
+  bootstrap:
+    servers: localhost:9092
+
+producer:
+  topic: employees-avro
+consumer:
+  topic: employees-avro
+  group: kafkaGroup
+period: 1000

@@ -10,17 +10,19 @@ beans:
   title: Beans and the Camel Registry
 annotations:
   title: Camel Annotations
-integrations:
-  title: Micronaut Integrations
-lifecycle:
-  title: Lifecycle
 http:
   title: HTTP and REST
+messaging:
+  title: Messaging
+integrations:
+  title: Micronaut Integrations
+operations:
+  title: Health, Management and Observability
+lifecycle:
+  title: Lifecycle
 testing:
   title: Testing
 native:
   title: GraalVM Native Image
-operations:
-  title: Health, Management and Observability
 repository: Repository
 releaseHistory: Release History
