@@ -1,0 +1,15 @@
+# Ports artemis/src/main/resources/application.properties
+micronaut:
+  jms:
+    activemq:
+      artemis:
+        # Micronaut JMS creates the connection factory of the jms component;
+        # the test sets the connection string and credentials of its broker
+        enabled: true
+
+# the queue to use, spring.artemis.embedded.queue in the original
+artemis:
+  queue: SCIENCEQUEUE
+
+# the test replaces it with a temporary directory holding the file to send
+input: target/work/artemis/input

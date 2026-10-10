@@ -10,6 +10,7 @@ Micronaut Camel integrates Apache Camel 4 with Micronaut 5. It was created from 
   - `CamelAnnotationsVisitor` handles Camel's bean annotations at compile time: `@EndpointInject`/`@Produce` become `@CamelInject`-qualified injection points served by a generated factory per class, `@Consume` methods become executable, and `@Converter` classes get a generated loader. Groovy cannot add generated sources, so there the classes are marked for Camel's runtime bean post-processor instead.
 - `camel-http/` (`micronaut-camel-http`) is the `PlatformHttpEngine` of Camel's `platform-http` component (and so of the REST DSL) on the Micronaut HTTP server. A server filter dispatches the requests no Micronaut route matches to the started consumers. Its `jettyTest` test suite runs the engine on Jetty from micronaut-servlet.
 - `camel-core/` also holds the operations integrations, in `io.micronaut.camel.health`, `.management`, `.micrometer` and `.tracing`. They use `compileOnly` dependencies on micronaut-management, micronaut-micrometer, micronaut-tracing and the Camel artifacts, and are gated with `@Requires`, so they are only active when the application adds those modules.
+- `camel-core` also integrates Camel's messaging components with the Micronaut messaging modules, in the `io.micronaut.camel.kafka`, `.jms`, `.rabbitmq`, `.nats` and `.mqtt` packages: `ComponentCustomizer` and factory beans that configure a component from the module's configuration when both are on the classpath (`compileOnly` dependencies, `@Requires(classes = ...)` plus the generated `@RequiresCamel*` annotation), never overriding `camel.component.<name>.*`. Their own settings are under `micronaut.camel.<integration>.*`.
 - `camel-test/` (`micronaut-camel-test`) adds Camel test annotations, such as `@MockEndpoints` and `@UseAdviceWith`, to `@MicronautTest` tests.
 - `camel-bom/` is the BOM. It imports `org.apache.camel:camel-bom`.
 - `buildSrc/src/main/groovy/io.micronaut.build.internal.camel-*.gradle` holds the convention plugins: `camel-base`, `camel-module` for published modules, and `camel-tests` for the test suites.
@@ -40,7 +41,7 @@ Micronaut Camel integrates Apache Camel 4 with Micronaut 5. It was created from 
 
 ## Verification
 
-- `./gradlew check` runs the tests.
+- `./gradlew check` runs the tests. The messaging tests start brokers with Testcontainers (in `TestPropertyProvider` tests); with Podman, Ryuk may fail to mount the socket, so run them with `TESTCONTAINERS_RYUK_DISABLED=true`. The tests stop their containers themselves.
 - Run `./gradlew publishGuide` after guide or `toc.yml` changes.
 
 ## Contributing Guidelines

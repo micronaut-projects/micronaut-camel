@@ -1,0 +1,135 @@
+Camel's messaging components are configured with `+camel.component.<name>.*+`, like any other component. When the application also uses the Micronaut module for the same broker, Micronaut Camel configures the component from that module's configuration, so the broker is configured once and Camel's routes and the module's listeners and clients connect to the same place.
+
+An integration applies when both the Camel component and the Micronaut module are on the classpath. It never overrides an option that is set with `+camel.component.<name>.*+`, and an endpoint's own options still take precedence over the component's. Each integration can be disabled with `micronaut.camel.<integration>.enabled: false`.
+
+[cols="1,1,2,1"]
+|===
+|Camel component |Micronaut module |What Micronaut Camel configures |Disabled with
+
+|`kafka`
+|Micronaut Kafka
+|`brokers` from `kafka.bootstrap.servers`, and the common client properties under `+kafka.*+` for every producer and consumer
+|`micronaut.camel.kafka.enabled`
+
+|`jms`, `sjms`
+|Micronaut JMS
+|`connectionFactory`, the connection factory of Micronaut JMS
+|`micronaut.camel.jms.enabled`
+
+|`amqp`
+|Micronaut JMS
+|`connectionFactory`, the Qpid JMS connection factory bean
+|`micronaut.camel.jms.enabled`
+
+|`spring-rabbitmq`
+|Micronaut RabbitMQ
+|`connectionFactory` and `amqpAdmin`, Spring AMQP beans created from `+rabbitmq.*+`
+|`micronaut.camel.rabbitmq.enabled`
+
+|`nats`
+|Micronaut NATS
+|`connection`, the NATS connection of Micronaut NATS
+|`micronaut.camel.nats.enabled`
+
+|`paho-mqtt5`
+|Micronaut MQTT
+|`brokerUrl`, `userName` and `password` from `+mqtt.client.*+`
+|`micronaut.camel.mqtt.enabled`
+|===
+
+=== Kafka
+
+Add the Camel Kafka component and Micronaut Kafka:
+
+dependency:org.apache.camel:camel-kafka[]
+
+dependency:io.micronaut.kafka:micronaut-kafka[]
+
+Kafka is then configured once, with the `+kafka.*+` properties of Micronaut Kafka:
+
+[configuration]
+----
+kafka:
+  bootstrap:
+    servers: localhost:9092
+----
+
+Routes use Kafka endpoints without broker settings:
+
+snippet::io.micronaut.camel.docs.messaging.OrderRoutes[tags="routes", indent=0, title="Routes using Kafka"]
+
+<1> The Kafka component sends to the brokers of `kafka.bootstrap.servers`; `camel.component.kafka.brokers`, or the endpoint's `brokers` option, would take precedence.
+<2> A consumer of the same topic, using the same brokers.
+
+The common client properties of Micronaut Kafka, such as `kafka.security.protocol`, `kafka.sasl.mechanism`, `kafka.sasl.jaas.config` or `kafka.ssl.truststore.location`, also apply to the producers and consumers that Camel creates. A Micronaut property replaces a client property that Camel leaves unset or at its default value, never one set through a Camel option. The properties of Micronaut Kafka's own producers and consumers, `+kafka.producers.*+` and `+kafka.consumers.*+`, do not apply to Camel.
+
+This is done by a `MicronautKafkaClientFactory` bean, which Camel autowires as the `kafkaClientFactory` of the component. It is not created when the application defines its own `KafkaClientFactory` bean.
+
+=== JMS and AMQP
+
+Add a Camel JMS component and Micronaut JMS for the broker, for example ActiveMQ Artemis:
+
+dependency:org.apache.camel:camel-jms[]
+
+dependency:io.micronaut.jms:micronaut-jms-activemq-artemis[]
+
+[configuration]
+----
+micronaut:
+  jms:
+    activemq:
+      artemis:
+        enabled: true
+        connection-string: tcp://localhost:61616
+        username: artemis
+        password: artemis
+----
+
+Micronaut JMS registers two `ConnectionFactory` beans per broker, the factory of the JMS client and a connection pool that decorates it, so Camel cannot autowire one. Micronaut Camel gives the `jms` and `sjms` components the factory of the JMS client: Spring JMS, on which the `jms` component is built, manages connections and sessions itself.
+
+[cols="1,2"]
+|===
+|Property |Effect
+
+|`micronaut.camel.jms.connection-factory`
+|The name of the connection factory to use when there are several brokers, such as `activeMqArtemisConnectionFactory`
+
+|`micronaut.camel.jms.pooled`
+|`true` to use the connection pool of Micronaut JMS instead
+|===
+
+The ActiveMQ components (`activemq`, `activemq6`) create their own connection factory and are left unchanged. The `amqp` component needs an AMQP 1.0 connection factory, so it is given the Qpid JMS `JmsConnectionFactory` bean of the application, if there is exactly one, unless the component's own connection options, such as `camel.component.amqp.host`, are set.
+
+=== RabbitMQ
+
+The RabbitMQ component of Camel 4 is `spring-rabbitmq`, built on Spring AMQP. Add it and Micronaut RabbitMQ:
+
+dependency:org.apache.camel:camel-spring-rabbitmq[]
+
+dependency:io.micronaut.rabbitmq:micronaut-rabbitmq[]
+
+[configuration]
+----
+rabbitmq:
+  host: localhost
+  port: 5672
+  username: guest
+  password: guest
+----
+
+For each connection of Micronaut RabbitMQ, Micronaut Camel creates a Spring AMQP `CachingConnectionFactory` and a `RabbitAdmin`, which the component autowires as its `connectionFactory` and `amqpAdmin`. Spring AMQP recovers connections itself, so the automatic recovery of the RabbitMQ client is disabled for these connections only. An application that defines its own Spring AMQP connection factory marks it `@Primary`, or disables the integration.
+
+=== NATS
+
+With `camel-nats` and Micronaut NATS, the `nats` component uses the NATS connection of Micronaut NATS (the `default` connection when there are several), unless `camel.component.nats.connection` or `camel.component.nats.servers` is set. Endpoints then use that connection even when they set `servers`; give such an endpoint its own `connection` instead.
+
+=== MQTT
+
+With `camel-paho-mqtt5`, the `paho-mqtt5` component connects to the server configured for Micronaut MQTT, whether or not Micronaut MQTT itself is used: when `mqtt.client.server-uri` is set, it sets `brokerUrl`, and `mqtt.client.user-name` and `mqtt.client.password` set `userName` and `password`. The client id is not shared, as an MQTT server accepts one connection per client id, so each endpoint keeps its own `clientId`.
+
+[configuration]
+----
+mqtt:
+  client:
+    server-uri: tcp://localhost:1883
+----

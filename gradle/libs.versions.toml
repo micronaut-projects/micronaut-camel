@@ -26,6 +26,10 @@ micronaut-cache = "6.1.1"
 micronaut-serde = "3.2.4"
 micronaut-micrometer = "6.1.0"
 micronaut-tracing = "8.3.0"
+micronaut-jms = "5.1.0"
+micronaut-kafka = "6.2.0"
+micronaut-nats = "5.1.0"
+micronaut-rabbitmq = "5.1.0"
 groovy = "4.0.24"
 spock = "2.3-groovy-4.0"
 
@@ -42,6 +46,10 @@ micronaut-cache = { module = "io.micronaut.cache:micronaut-cache-bom", version.r
 micronaut-serde = { module = "io.micronaut.serde:micronaut-serde-bom", version.ref = "micronaut-serde" }
 micronaut-micrometer = { module = "io.micronaut.micrometer:micronaut-micrometer-bom", version.ref = "micronaut-micrometer" }
 micronaut-tracing = { module = "io.micronaut.tracing:micronaut-tracing-bom", version.ref = "micronaut-tracing" }
+micronaut-jms = { module = "io.micronaut.jms:micronaut-jms-bom", version.ref = "micronaut-jms" }
+micronaut-kafka = { module = "io.micronaut.kafka:micronaut-kafka-bom", version.ref = "micronaut-kafka" }
+micronaut-nats = { module = "io.micronaut.nats:micronaut-nats-bom", version.ref = "micronaut-nats" }
+micronaut-rabbitmq = { module = "io.micronaut.rabbitmq:micronaut-rabbitmq-bom", version.ref = "micronaut-rabbitmq" }
 
 #
 # Managed dependencies appear in the BOM
@@ -57,6 +65,8 @@ boms-camel = { module = "org.apache.camel:camel-bom", version.ref = "managed-cam
 
 # Versions from boms-camel
 camel-main = { module = "org.apache.camel:camel-main" }
+camel-amqp = { module = "org.apache.camel:camel-amqp" }
+camel-avro = { module = "org.apache.camel:camel-avro" }
 camel-bean = { module = "org.apache.camel:camel-bean" }
 camel-catalog = { module = "org.apache.camel:camel-catalog" }
 camel-csv = { module = "org.apache.camel:camel-csv" }
@@ -69,6 +79,9 @@ camel-http = { module = "org.apache.camel:camel-http" }
 camel-jackson = { module = "org.apache.camel:camel-jackson" }
 camel-health = { module = "org.apache.camel:camel-health" }
 camel-jackson3 = { module = "org.apache.camel:camel-jackson3" }
+camel-jms = { module = "org.apache.camel:camel-jms" }
+camel-jsonpath = { module = "org.apache.camel:camel-jsonpath" }
+camel-kafka = { module = "org.apache.camel:camel-kafka" }
 camel-log = { module = "org.apache.camel:camel-log" }
 camel-management = { module = "org.apache.camel:camel-management" }
 camel-micrometer = { module = "org.apache.camel:camel-micrometer" }
@@ -77,10 +90,14 @@ camel-openapi-java = { module = "org.apache.camel:camel-openapi-java" }
 camel-openapi-validator = { module = "org.apache.camel:camel-openapi-validator" }
 camel-platform-http = { module = "org.apache.camel:camel-platform-http" }
 camel-opentelemetry2 = { module = "org.apache.camel:camel-opentelemetry2" }
+camel-nats = { module = "org.apache.camel:camel-nats" }
+camel-paho-mqtt5 = { module = "org.apache.camel:camel-paho-mqtt5" }
 camel-quartz = { module = "org.apache.camel:camel-quartz" }
 camel-rest = { module = "org.apache.camel:camel-rest" }
 camel-rest-openapi = { module = "org.apache.camel:camel-rest-openapi" }
 camel-seda = { module = "org.apache.camel:camel-seda" }
+camel-sjms = { module = "org.apache.camel:camel-sjms" }
+camel-spring-rabbitmq = { module = "org.apache.camel:camel-spring-rabbitmq" }
 camel-stream = { module = "org.apache.camel:camel-stream" }
 camel-timer = { module = "org.apache.camel:camel-timer" }
 camel-undertow = { module = "org.apache.camel:camel-undertow" }
@@ -88,6 +105,11 @@ camel-yaml-dsl = { module = "org.apache.camel:camel-yaml-dsl" }
 
 # Versions from the OpenTelemetry BOM imported by micronaut-tracing
 opentelemetry-sdk-testing = { module = "io.opentelemetry:opentelemetry-sdk-testing" }
+# Versions from mnTest.boms.testcontainers
+testcontainers-activemq = { module = "org.testcontainers:testcontainers-activemq" }
+testcontainers-hivemq = { module = "org.testcontainers:testcontainers-hivemq" }
+testcontainers-kafka = { module = "org.testcontainers:testcontainers-kafka" }
+testcontainers-rabbitmq = { module = "org.testcontainers:testcontainers-rabbitmq" }
 
 [bundles]
 
