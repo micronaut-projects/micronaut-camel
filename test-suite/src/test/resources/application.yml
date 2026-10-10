@@ -13,3 +13,12 @@ endpoints:
     rabbitmq:
       # most tests have no RabbitMQ broker
       enabled: false
+# The database of the guide samples about transactions
+datasources:
+  default:
+    url: "jdbc:h2:mem:docs;DB_CLOSE_DELAY=-1;INIT=RUNSCRIPT FROM 'classpath:transactions/schema.sql'"
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+    # Micronaut transactions run on Spring's DataSourceTransactionManager, which camel-sql joins
+    transaction-manager: springJdbc

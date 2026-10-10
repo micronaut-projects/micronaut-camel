@@ -1,0 +1,11 @@
+# Ports spring-jdbc/src/main/resources/application.properties
+camel:
+  main:
+    name: MyCamel
+
+# the test sets the url, username and password of a PostgreSQL container
+datasources:
+  default:
+    driver-class-name: org.postgresql.Driver
+    # run Micronaut transactions on Spring's DataSourceTransactionManager, which the sql component joins
+    transaction-manager: springJdbc

@@ -30,6 +30,8 @@ micronaut-jms = "5.1.0"
 micronaut-kafka = "6.2.0"
 micronaut-nats = "5.1.0"
 micronaut-rabbitmq = "5.1.0"
+micronaut-data = "5.2.2"
+micronaut-sql = "7.2.0"
 groovy = "4.0.24"
 spock = "2.3-groovy-4.0"
 
@@ -50,6 +52,8 @@ micronaut-jms = { module = "io.micronaut.jms:micronaut-jms-bom", version.ref = "
 micronaut-kafka = { module = "io.micronaut.kafka:micronaut-kafka-bom", version.ref = "micronaut-kafka" }
 micronaut-nats = { module = "io.micronaut.nats:micronaut-nats-bom", version.ref = "micronaut-nats" }
 micronaut-rabbitmq = { module = "io.micronaut.rabbitmq:micronaut-rabbitmq-bom", version.ref = "micronaut-rabbitmq" }
+micronaut-data = { module = "io.micronaut.data:micronaut-data-bom", version.ref = "micronaut-data" }
+micronaut-sql = { module = "io.micronaut.sql:micronaut-sql-bom", version.ref = "micronaut-sql" }
 
 #
 # Managed dependencies appear in the BOM
@@ -81,6 +85,8 @@ camel-health = { module = "org.apache.camel:camel-health" }
 camel-jackson3 = { module = "org.apache.camel:camel-jackson3" }
 camel-jms = { module = "org.apache.camel:camel-jms" }
 camel-jsonpath = { module = "org.apache.camel:camel-jsonpath" }
+camel-jdbc = { module = "org.apache.camel:camel-jdbc" }
+camel-jpa = { module = "org.apache.camel:camel-jpa" }
 camel-kafka = { module = "org.apache.camel:camel-kafka" }
 camel-log = { module = "org.apache.camel:camel-log" }
 camel-management = { module = "org.apache.camel:camel-management" }
@@ -98,6 +104,7 @@ camel-rest-openapi = { module = "org.apache.camel:camel-rest-openapi" }
 camel-seda = { module = "org.apache.camel:camel-seda" }
 camel-sjms = { module = "org.apache.camel:camel-sjms" }
 camel-spring-rabbitmq = { module = "org.apache.camel:camel-spring-rabbitmq" }
+camel-sql = { module = "org.apache.camel:camel-sql" }
 camel-stream = { module = "org.apache.camel:camel-stream" }
 camel-timer = { module = "org.apache.camel:camel-timer" }
 camel-undertow = { module = "org.apache.camel:camel-undertow" }
@@ -110,6 +117,9 @@ testcontainers-activemq = { module = "org.testcontainers:testcontainers-activemq
 testcontainers-hivemq = { module = "org.testcontainers:testcontainers-hivemq" }
 testcontainers-kafka = { module = "org.testcontainers:testcontainers-kafka" }
 testcontainers-rabbitmq = { module = "org.testcontainers:testcontainers-rabbitmq" }
+# Versions from the Testcontainers BOM of Micronaut Test
+testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter" }
+testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
 
 [bundles]
 

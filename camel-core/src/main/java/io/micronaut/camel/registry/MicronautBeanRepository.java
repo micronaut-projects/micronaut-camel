@@ -43,7 +43,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@code MyBean}. Lookups by type that expect a single bean honour {@code @Primary}.</p>
  *
  * <p>The {@link CamelContext} and the beans that bootstrap it are never returned, so that Camel can
- * look up beans while the context is being created.</p>
+ * look up beans while the context is being created. Beans may be adapted for Camel by a
+ * {@link CamelBeanAdapter}.</p>
  *
  * @author Graeme Rocher
  * @since 1.0.0
@@ -53,6 +54,7 @@ public final class MicronautBeanRepository implements BeanRepository {
 
     private final BeanContext beanContext;
     private final Map<String, Optional<BeanDefinition<?>>> definitionsByName = new ConcurrentHashMap<>();
+    private volatile @Nullable List<CamelBeanAdapter> adapters;
 
     /**
      * @param beanContext The bean context
@@ -70,11 +72,11 @@ public final class MicronautBeanRepository implements BeanRepository {
     public <T> @Nullable T lookupByNameAndType(String name, Class<T> type) {
         Optional<BeanDefinition<?>> definition = definitionByName(name);
         if (definition.isPresent() && type.isAssignableFrom(definition.get().getBeanType())) {
-            return type.cast(getBean(definition.get()));
+            return getBean(definition.get(), type);
         }
         Collection<BeanDefinition<T>> candidates = candidates(type, name);
         if (candidates.size() == 1) {
-            return getBean(candidates.iterator().next());
+            return getBean(candidates.iterator().next(), type);
         }
         return null;
     }
@@ -83,7 +85,7 @@ public final class MicronautBeanRepository implements BeanRepository {
     public <T> Map<String, T> findByTypeWithName(Class<T> type) {
         Map<String, T> beans = new LinkedHashMap<>();
         for (BeanDefinition<T> definition : definitions(type)) {
-            beans.put(nameOf(definition), getBean(definition));
+            beans.put(nameOf(definition), getBean(definition, type));
         }
         return beans;
     }
@@ -92,7 +94,7 @@ public final class MicronautBeanRepository implements BeanRepository {
     public <T> Set<T> findByType(Class<T> type) {
         Set<T> beans = new LinkedHashSet<>();
         for (BeanDefinition<T> definition : definitions(type)) {
-            beans.add(getBean(definition));
+            beans.add(getBean(definition, type));
         }
         return beans;
     }
@@ -104,10 +106,10 @@ public final class MicronautBeanRepository implements BeanRepository {
             return null;
         }
         if (definitions.size() == 1) {
-            return getBean(definitions.get(0));
+            return getBean(definitions.get(0), type);
         }
         try {
-            return beanContext.findBean(type).orElse(null);
+            return beanContext.findBean(type).map(bean -> adapt(bean, type)).orElse(null);
         } catch (NonUniqueBeanException e) {
             return null;
         }
@@ -152,9 +154,29 @@ public final class MicronautBeanRepository implements BeanRepository {
             .toList();
     }
 
+    private Object getBean(BeanDefinition<?> definition) {
+        return getBean(definition, Object.class);
+    }
+
+    private <T> T getBean(BeanDefinition<?> definition, Class<T> type) {
+        return adapt(beanContext.getBean(definition), type);
+    }
+
     @SuppressWarnings("unchecked")
-    private <T> T getBean(BeanDefinition<?> definition) {
-        return beanContext.getBean((BeanDefinition<T>) definition);
+    private <T> T adapt(Object bean, Class<T> type) {
+        List<CamelBeanAdapter> beanAdapters = adapters;
+        if (beanAdapters == null) {
+            beanAdapters = List.copyOf(beanContext.getBeansOfType(CamelBeanAdapter.class));
+            adapters = beanAdapters;
+        }
+        Object result = bean;
+        for (CamelBeanAdapter adapter : beanAdapters) {
+            Object adapted = adapter.adapt(result);
+            if (type.isInstance(adapted)) {
+                result = adapted;
+            }
+        }
+        return (T) result;
     }
 
     private static boolean isVisible(BeanDefinition<?> definition) {

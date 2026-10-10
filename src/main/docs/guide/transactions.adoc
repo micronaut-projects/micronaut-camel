@@ -1,0 +1,145 @@
+Camel's transacted routes run in Micronaut transactions, so a route, the Camel components it calls and Micronaut code such as a `@Transactional` method or a Micronaut Data repository share one transaction.
+
+=== Setting up camel-sql
+
+The `sql` and `jdbc` components, and Camel's JDBC repositories, use Spring JDBC. The recommended setup runs Micronaut transactions on Spring's `DataSourceTransactionManager`, with Micronaut Data Spring JDBC, so that Spring JDBC code joins them:
+
+dependency:org.apache.camel:camel-sql[]
+
+dependency:io.micronaut.sql:micronaut-jdbc-hikari[]
+
+dependency:io.micronaut.data:micronaut-data-spring-jdbc[]
+
+dependency:io.micronaut.data:micronaut-data-tx[]
+
+[configuration]
+----
+datasources:
+  default:
+    url: jdbc:postgresql://localhost:5432/horses
+    username: horses
+    password: secret
+    driver-class-name: org.postgresql.Driver
+    transaction-manager: springJdbc
+----
+
+The `transaction-manager: springJdbc` setting makes Micronaut transactions use the `DataSourceTransactionManager` bean that Micronaut Data Spring JDBC creates for the data source. The `dataSource` option of the `sql` component is autowired from the `DataSource` bean.
+
+NOTE: Micronaut Data needs `micronaut-json-core` on the classpath, which an application usually gets from its JSON support, such as `micronaut-serde-jackson`.
+
+=== Transacted routes
+
+`transacted()` runs the rest of the route in a Micronaut transaction:
+
+snippet::io.micronaut.camel.docs.transactions.HorseRoutes[tags="routes", indent=0, title="Transacted routes"]
+
+<1> The rest of the route runs in a transaction, which commits when the exchange completes.
+<2> The `sql` component joins the transaction.
+<3> The transaction rolls back when the exchange fails or is marked for rollback, here with `rollback()`. The caller gets a `RollbackExchangeException`.
+<4> Processors such as `split` run in the same transaction, so a failing insert rolls back the other inserts.
+<5> `PROPAGATION_REQUIRES_NEW` runs the audit insert in a new transaction, which commits even when the transaction of the calling route rolls back.
+<6> A custom policy, see below.
+
+When code that already runs in a Micronaut transaction, for example a `@Transactional` method, sends a message to a transacted route, the route joins its transaction.
+
+The transaction rolls back when:
+
+* the exchange fails with an exception that no `onException` clause handles
+* the route calls `rollback()`, which also fails the exchange
+* the route calls `markRollbackOnly()`, which rolls back without an error, or `markRollbackOnlyLast()`, which only rolls back the innermost transaction
+
+An exception handled by `onException(...).handled(true)` does not roll the transaction back, and redeliveries happen in the transaction. As a transaction is bound to a thread, a transacted route processes its exchanges synchronously.
+
+=== Transaction policies
+
+`transacted()` uses the `PROPAGATION_REQUIRED` policy, which joins the current transaction or starts one. Pass another policy name to `transacted(...)`, such as `transacted("PROPAGATION_REQUIRES_NEW")`. Micronaut Camel registers a policy for each propagation behavior, named like Camel's Spring policies:
+
+[cols="1,2"]
+|===
+|Policy |Behavior
+
+|`PROPAGATION_REQUIRED`
+|Joins the current transaction, or starts one. The default.
+
+|`PROPAGATION_REQUIRES_NEW`
+|Suspends the current transaction and starts a new one
+
+|`PROPAGATION_MANDATORY`
+|Joins the current transaction, and fails without one
+
+|`PROPAGATION_SUPPORTS`
+|Joins the current transaction, or runs without one
+
+|`PROPAGATION_NOT_SUPPORTED`
+|Suspends the current transaction and runs without one
+
+|`PROPAGATION_NEVER`
+|Runs without a transaction, and fails with one
+
+|`PROPAGATION_NESTED`
+|Runs in a savepoint of the current transaction, or starts one
+|===
+
+The policies use the primary Micronaut `TransactionOperations` bean, which is the transaction manager of the `default` data source. To use other transaction settings, or the transaction manager of another data source, declare a `MicronautTransactionPolicy` bean:
+
+snippet::io.micronaut.camel.docs.transactions.TransactionPolicies[tags="policy", indent=0, title="A custom transaction policy"]
+
+<1> The name of the bean is the name routes pass to `transacted(...)`. Inject a qualified `TransactionOperations` to use another data source.
+<2> The policy runs transactions with the given definition: here read-only, with a timeout.
+
+The error handler of transacted routes is a `MicronautTransactionErrorHandlerDefinition`. Set one as the error handler of a `RouteBuilder` to change its redeliveries or the logging level of rollbacks, for example `errorHandler(new MicronautTransactionErrorHandlerDefinition().rollbackLoggingLevel(LoggingLevel.INFO))`.
+
+=== The data source of Camel components
+
+Micronaut Data wraps each `DataSource` bean so that connections are only available inside a Micronaut transaction or connection. Camel components open connections themselves, for example when a consumer polls, so Camel gets a different `DataSource` for the same pool: it returns the connection of the current Micronaut transaction or connection when there is one, and a new connection from the pool otherwise. As a result:
+
+* the `sql` and `jdbc` components work in routes that are not transacted, each statement in its own connection
+* in a transacted route, or when the route is called from a Micronaut transaction, they use the connection of the transaction
+
+This works with the `springJdbc` transaction manager and with the default JDBC transaction manager of Micronaut Data. The `jdbc` component commits its connection after each statement unless its `resetAutoCommit` option is `false`, so set `resetAutoCommit=false` on `jdbc` endpoints of transacted routes.
+
+Micronaut code that injects a `DataSource` still gets the Micronaut Data one.
+
+=== Idempotent and aggregation repositories
+
+Camel's `JdbcMessageIdRepository` and `JdbcAggregationRepository` take a data source and a Spring transaction manager. With Micronaut Data Spring JDBC, use the `DataSourceTransactionManager` bean, so that the repository joins the transaction of the route:
+
+snippet::io.micronaut.camel.docs.transactions.ProcessedOrders[tags="repository", indent=0, title="An idempotent repository"]
+
+<1> The `DataSourceTransactionManager` of the `default` data source.
+<2> The data source of the transaction manager is the connection pool itself, which Spring JDBC uses directly.
+<3> The repository updates its table in the transaction of the route.
+
+snippet::io.micronaut.camel.docs.transactions.OrderRoutes[tags="routes", indent=0, title="An idempotent consumer in a transacted route"]
+
+<1> The repository records the order ID in the transaction of the route.
+<2> When the route fails, the record of the order ID is rolled back with the order, so the order can be sent again.
+
+`JdbcAggregationRepository` is created the same way, with `new JdbcAggregationRepository(transactionManager, "aggregation", transactionManager.getDataSource())`.
+
+=== JPA
+
+The `jpa` component uses Spring's transaction support: it joins a transaction that Spring's `HibernateTransactionManager` started, through a shared entity manager. Run Micronaut transactions on that transaction manager with Micronaut Data Spring JPA:
+
+dependency:org.apache.camel:camel-jpa[]
+
+dependency:io.micronaut.sql:micronaut-hibernate-jpa[]
+
+dependency:io.micronaut.data:micronaut-data-spring-jpa[]
+
+[configuration]
+----
+datasources:
+  default:
+    url: jdbc:postgresql://localhost:5432/horses
+    driver-class-name: org.postgresql.Driver
+    transaction-manager: springHibernate
+jpa:
+  default:
+    entity-scan:
+      packages: com.example.horses
+----
+
+Then set `sharedEntityManager=true` on the `jpa` endpoints, for example `to("jpa:com.example.horses.Horse?sharedEntityManager=true")`. The `entityManagerFactory` option of the component is autowired from the `EntityManagerFactory` bean, and the component finds the Spring transaction manager in the registry.
+
+WARNING: With the default Hibernate transaction manager of Micronaut Data, the `jpa` component works, but it runs its operations in its own transactions, which transacted routes and Micronaut transactions do not roll back.
