@@ -18,5 +18,7 @@ http:
   title: HTTP and REST
 testing:
   title: Testing
+operations:
+  title: Health, Management and Observability
 repository: Repository
 releaseHistory: Release History

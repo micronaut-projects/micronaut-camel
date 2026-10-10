@@ -37,4 +37,6 @@ micronautBuild {
     importMicronautCatalog("micronaut-sourcegen")
     importMicronautCatalog("micronaut-cache")
     importMicronautCatalog("micronaut-serde")
+    importMicronautCatalog("micronaut-micrometer")
+    importMicronautCatalog("micronaut-tracing")
 }

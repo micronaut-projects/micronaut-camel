@@ -6,9 +6,10 @@ Micronaut Camel integrates Apache Camel 4 with Micronaut 5. It was created from 
 
 - `camel-core/` is the runtime integration, published as `micronaut-camel-core` (`useStandardizedProjectNames`).
 - `camel-processor/` (`micronaut-camel-processor`) is the annotation processor:
-  - `CamelConfigVisitor` generates code from the Camel catalog for classes annotated with `@CamelConfig`: the `@RequiresCamel*` annotations and the camel-main `@ConfigurationProperties` of `camel-core`, and the component, data format and language `@ConfigurationProperties` of `camel-components/`. Camel applies the options at runtime through camel-main; the generated classes document them.
+  - `CamelConfigVisitor` generates code from the Camel catalog for classes annotated with `@CamelConfig`: the `@RequiresCamel*` annotations of `camel-core`, and the camel-main, component, data format and language `@ConfigurationProperties` of `camel-components/`. Keep generated configuration classes out of `camel-core`: Micronaut writes the configuration metadata of one annotation processing round only, and `camel-core` has configuration readers of its own (the `/camel` endpoint). Camel applies the options at runtime through camel-main; the generated classes document them.
   - `CamelAnnotationsVisitor` handles Camel's bean annotations at compile time: `@EndpointInject`/`@Produce` become `@CamelInject`-qualified injection points served by a generated factory per class, `@Consume` methods become executable, and `@Converter` classes get a generated loader. Groovy cannot add generated sources, so there the classes are marked for Camel's runtime bean post-processor instead.
 - `camel-http/` (`micronaut-camel-http`) is the `PlatformHttpEngine` of Camel's `platform-http` component (and so of the REST DSL) on the Micronaut HTTP server. A server filter dispatches the requests no Micronaut route matches to the started consumers. Its `jettyTest` test suite runs the engine on Jetty from micronaut-servlet.
+- `camel-core/` also holds the operations integrations, in `io.micronaut.camel.health`, `.management`, `.micrometer` and `.tracing`. They use `compileOnly` dependencies on micronaut-management, micronaut-micrometer, micronaut-tracing and the Camel artifacts, and are gated with `@Requires`, so they are only active when the application adds those modules.
 - `camel-test/` (`micronaut-camel-test`) adds Camel test annotations, such as `@MockEndpoints` and `@UseAdviceWith`, to `@MicronautTest` tests.
 - `camel-bom/` is the BOM. It imports `org.apache.camel:camel-bom`.
 - `buildSrc/src/main/groovy/io.micronaut.build.internal.camel-*.gradle` holds the convention plugins: `camel-base`, `camel-module` for published modules, and `camel-tests` for the test suites.
@@ -23,7 +24,7 @@ Micronaut Camel integrates Apache Camel 4 with Micronaut 5. It was created from 
 
 ## Versions
 
-- Micronaut core is 5.2.x and Camel is 4.22.x (`managed-camel` in `gradle/libs.versions.toml`). The generated code follows the Camel catalog of that version, so upgrading Camel regenerates it.
+- Micronaut core is 5.2.x, micronaut-micrometer 6.1.x and micronaut-tracing 8.3.x (catalogs `mnMicrometer` and `mnTracing`), and Camel is 4.22.x (`managed-camel` in `gradle/libs.versions.toml`). The generated code follows the Camel catalog of that version, so upgrading Camel regenerates it.
 
 ## Code
 

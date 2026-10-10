@@ -1,0 +1,173 @@
+Camel's health checks, route management, metrics and tracing are integrated with Micronaut's management endpoints, Micrometer and OpenTelemetry. Each integration is part of `micronaut-camel-core` and is only active when the application has both the Micronaut module and the Camel artifact on its classpath.
+
+=== Health checks
+
+With Micronaut's management endpoints and Camel's health checks on the classpath, Camel's health is part of the Micronaut `health` endpoint:
+
+dependency:io.micronaut:micronaut-management[]
+
+dependency:org.apache.camel:camel-health[]
+
+Two health indicators report the results of Camel's health checks:
+
+* `camel` runs Camel's readiness checks. It is part of `/health` and `/health/readiness`.
+* `camelLiveness` runs Camel's liveness checks. It is part of `/health` and `/health/liveness`.
+
+An indicator is DOWN when one of its checks is DOWN, so the HTTP status of the endpoint is 503. A check in the UNKNOWN state, for example a route that the supervising route controller has given up restarting, does not make the indicator DOWN.
+
+Camel's checks of the context, the routes, the consumers and the health check beans are registered by default, and the producer checks are disabled, as with Camel Main. The `camel.health.*` options configure them:
+
+[configuration]
+----
+camel:
+  health:
+    exposure-level: full
+    producers-enabled: true
+    exclude-pattern: audit*
+endpoints:
+  health:
+    details-visible: ANONYMOUS
+----
+
+The exposure level (`camel.health.exposure-level`) sets the details of the checks: with `default`, only the checks that are DOWN are reported, or a single check when every check is UP; with `full`, every check is reported with its details; with `oneline`, only the state of the checks is reported. Micronaut only shows the details to authenticated users unless `endpoints.health.details-visible` is `ANONYMOUS`.
+
+[source,json]
+----
+{
+  "status": "UP",
+  "details": {
+    "camel": {
+      "status": "UP",
+      "details": {
+        "context": {"status": "UP", "context.name": "shop", "context.status": "Started"},
+        "route:submit-order": {"status": "UP", "route.id": "submit-order", "route.status": "Started"},
+        "inventory": {"status": "UP", "warehouse": "main"}
+      }
+    }
+  }
+}
+----
+
+`camel.health.enabled=false` disables Camel's health checks and both health indicators.
+
+==== Custom health checks
+
+A bean that implements Camel's `HealthCheck` interface, usually by extending `AbstractHealthCheck`, is found by Camel in the registry and runs with the other checks:
+
+snippet::io.micronaut.camel.docs.operations.InventoryHealthCheck[tags="check", indent=0, title="A custom health check"]
+
+<1> Any bean of type `HealthCheck` is a Camel health check.
+<2> The group and id of the check. The id is the key of the check in the health details.
+<3> Details are reported with the state of the check.
+
+Health checks are readiness checks unless they override `isLiveness()` and `isReadiness()`.
+
+=== The camel endpoint
+
+The `camel` management endpoint, at `/camel`, lists the routes of the `CamelContext` and controls them, like the `camelroutes` and `camelroutecontroller` actuator endpoints of Camel Spring Boot:
+
+[cols="1,2"]
+|===
+|Request |Effect
+
+|`GET /camel`
+|The name, version, status and uptime of the context, and its routes
+
+|`GET /camel/{routeId}`
+|A route: its id, group, description, endpoint URI, status and uptime
+
+|`POST /camel/{routeId}/{action}`
+|Controls a route with Camel's route controller, and returns the route. The action is `start`, `stop`, `suspend`, `resume`, or `reset` to reset the route's statistics
+
+|`DELETE /camel/{routeId}`
+|Stops and removes a route
+|===
+
+[source,json]
+----
+{
+  "name": "shop",
+  "version": "4.22.1",
+  "status": "Started",
+  "uptime": "2m10s",
+  "uptimeMillis": 130412,
+  "routes": [
+    {
+      "id": "submit-order",
+      "uri": "direct://submit-order",
+      "status": "Started",
+      "uptime": "2m10s",
+      "uptimeMillis": 130398,
+      "statistics": {
+        "exchangesTotal": 42,
+        "exchangesCompleted": 41,
+        "exchangesFailed": 1,
+        "exchangesInflight": 0,
+        "meanProcessingTime": 3
+      }
+    }
+  ]
+}
+----
+
+The `statistics` of the context and of the routes are included when Camel's JMX management is available, which needs the `camel-management` dependency.
+
+Like Micronaut's other management endpoints the `camel` endpoint can be disabled with `endpoints.camel.enabled=false`. It is sensitive, so it requires an authenticated user unless `endpoints.camel.sensitive` is `false`. The requests that change routes stay sensitive unless `endpoints.camel.write-sensitive` is also `false`:
+
+[configuration]
+----
+endpoints:
+  camel:
+    sensitive: false
+    write-sensitive: true
+----
+
+The `info` endpoint includes the name, version, status and uptime of the `CamelContext` under `camel`, unless `endpoints.info.camel.enabled` is `false`.
+
+=== Metrics
+
+With Micronaut Micrometer and Camel's Micrometer component on the classpath, Camel records its metrics in the Micronaut `MeterRegistry`, so they are exported by the registries the application configures and exposed by the `metrics` and `prometheus` endpoints:
+
+dependency:io.micronaut.micrometer:micronaut-micrometer-core[]
+
+dependency:org.apache.camel:camel-micrometer[]
+
+As with Camel Main, route and exchange metrics are enabled with `camel.metrics.enabled`, and configured with the other `camel.metrics.*` options:
+
+[configuration]
+----
+camel:
+  metrics:
+    enabled: true
+    enable-message-history: true
+----
+
+The metrics are recorded by Camel's route policy (`camel.route.policy` and `camel.exchanges.*`), exchange event notifier (`camel.exchange.event.notifier`), route event notifier (`camel.routes.added` and `camel.routes.running`) and, when `enable-message-history` is set, message history (`camel.message.history`). `naming-strategy: legacy` switches to Camel's earlier meter names.
+
+Camel Main's `camel.metrics.path` and `camel.metrics.text-format-version` options configure Camel's own Prometheus endpoint, so they are ignored. Micrometer binders are configured with Micronaut's `micronaut.metrics.binders.*` options rather than `camel.metrics.binders`.
+
+The `micrometer` component also uses the Micronaut registry, whether or not `camel.metrics.enabled` is set:
+
+snippet::io.micronaut.camel.docs.operations.OrderRoutes[tags="routes", indent=0, title="Counting messages with the micrometer component"]
+
+<1> Increments the `orders.placed` counter of the Micronaut meter registry.
+
+=== Tracing
+
+With Micronaut's OpenTelemetry tracing and Camel's OpenTelemetry 2 integration on the classpath, Camel's spans are created by the Micronaut `OpenTelemetry` instance:
+
+dependency:io.micronaut.tracing:micronaut-tracing-opentelemetry[]
+
+dependency:org.apache.camel:camel-opentelemetry2[]
+
+As with Camel Main, Camel's tracing is enabled with `camel.opentelemetry2.enabled`, and configured with the other `camel.opentelemetry2.*` options:
+
+[configuration]
+----
+camel:
+  opentelemetry2:
+    enabled: true
+    exclude-patterns: log*
+----
+
+Camel uses the `Tracer` and the context propagators of the Micronaut `OpenTelemetry` bean, so its spans are exported with Micronaut's, and a route called while a Micronaut span is current, for example by a controller, joins its trace. Spans are exported as configured by the `otel.*` options of Micronaut Tracing, such as `otel.traces.exporter`.

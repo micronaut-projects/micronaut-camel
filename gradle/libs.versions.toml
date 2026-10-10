@@ -24,6 +24,8 @@ micronaut-servlet = "6.2.2"
 micronaut-sourcegen = "2.2.3"
 micronaut-cache = "6.1.1"
 micronaut-serde = "3.2.4"
+micronaut-micrometer = "6.1.0"
+micronaut-tracing = "8.3.0"
 groovy = "4.0.24"
 spock = "2.3-groovy-4.0"
 
@@ -38,6 +40,8 @@ micronaut-servlet = { module = "io.micronaut.servlet:micronaut-servlet-bom", ver
 micronaut-sourcegen = { module = "io.micronaut.sourcegen:micronaut-sourcegen-bom", version.ref = "micronaut-sourcegen" }
 micronaut-cache = { module = "io.micronaut.cache:micronaut-cache-bom", version.ref = "micronaut-cache" }
 micronaut-serde = { module = "io.micronaut.serde:micronaut-serde-bom", version.ref = "micronaut-serde" }
+micronaut-micrometer = { module = "io.micronaut.micrometer:micronaut-micrometer-bom", version.ref = "micronaut-micrometer" }
+micronaut-tracing = { module = "io.micronaut.tracing:micronaut-tracing-bom", version.ref = "micronaut-tracing" }
 
 #
 # Managed dependencies appear in the BOM
@@ -63,12 +67,16 @@ camel-file = { module = "org.apache.camel:camel-file" }
 camel-groovy = { module = "org.apache.camel:camel-groovy" }
 camel-http = { module = "org.apache.camel:camel-http" }
 camel-jackson = { module = "org.apache.camel:camel-jackson" }
+camel-health = { module = "org.apache.camel:camel-health" }
 camel-jackson3 = { module = "org.apache.camel:camel-jackson3" }
 camel-log = { module = "org.apache.camel:camel-log" }
+camel-management = { module = "org.apache.camel:camel-management" }
+camel-micrometer = { module = "org.apache.camel:camel-micrometer" }
 camel-mock = { module = "org.apache.camel:camel-mock" }
 camel-openapi-java = { module = "org.apache.camel:camel-openapi-java" }
 camel-openapi-validator = { module = "org.apache.camel:camel-openapi-validator" }
 camel-platform-http = { module = "org.apache.camel:camel-platform-http" }
+camel-opentelemetry2 = { module = "org.apache.camel:camel-opentelemetry2" }
 camel-quartz = { module = "org.apache.camel:camel-quartz" }
 camel-rest = { module = "org.apache.camel:camel-rest" }
 camel-rest-openapi = { module = "org.apache.camel:camel-rest-openapi" }
@@ -77,6 +85,9 @@ camel-stream = { module = "org.apache.camel:camel-stream" }
 camel-timer = { module = "org.apache.camel:camel-timer" }
 camel-undertow = { module = "org.apache.camel:camel-undertow" }
 camel-yaml-dsl = { module = "org.apache.camel:camel-yaml-dsl" }
+
+# Versions from the OpenTelemetry BOM imported by micronaut-tracing
+opentelemetry-sdk-testing = { module = "io.opentelemetry:opentelemetry-sdk-testing" }
 
 [bundles]
 

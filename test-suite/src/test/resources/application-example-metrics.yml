@@ -1,0 +1,11 @@
+# Ports metrics/src/main/resources/application.properties
+info:
+  build:
+    name: Example of recording camel metrics with Micrometer
+
+camel:
+  main:
+    name: camel-example-micronaut-metrics
+  # records route metrics in the Micronaut meter registry
+  metrics:
+    enabled: true
