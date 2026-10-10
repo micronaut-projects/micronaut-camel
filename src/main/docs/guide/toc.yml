@@ -14,6 +14,8 @@ http:
   title: HTTP and REST
 messaging:
   title: Messaging
+transactions:
+  title: Transactions and Databases
 integrations:
   title: Micronaut Integrations
 operations:

@@ -17,6 +17,9 @@ Micronaut Camel integrates Apache Camel 4 with Micronaut 5. It was created from 
 - `test-suite`, `test-suite-kotlin` (KSP) and `test-suite-groovy` (Spock) hold the guide samples. Every sample is a `snippet::` with the same fully qualified name, under `io.micronaut.camel.docs`, in each suite. The suites have the Netty server, so every `@MicronautTest` starts a server.
 - `test-suite/src/test/java/io/micronaut/camel/examples/<name>` ports a camel-spring-boot-examples example: its beans are `@Requires(env = "example-<name>")`, its test is `@MicronautTest(environments = "example-<name>")` and its configuration is `application-example-<name>.yml`.
 - `test-suite-graal` runs Camel in a native image with `./gradlew :test-suite-graal:nativeTest` (GraalVM 25). The `CamelNativeFeature` of `camel-core` registers the classes of Camel's service files and the classes the processor lists under `META-INF/micronaut-camel/native`; keep new reflective or service-file-based features covered there.
+- `camel-core` integrates other Micronaut modules in sub-packages, behind `@Requires(classes = ...)` with `compileOnly` dependencies: `transaction` runs `transacted()` routes in Micronaut Data transactions (`MicronautTransactionPolicy`, named `PROPAGATION_*` policy beans, a transactional error handler), and `jdbc` gives Camel a `DataSource` that joins the current Micronaut transaction and works outside one. Registry beans are adapted for Camel by `CamelBeanAdapter` beans.
+- `test-suite`, `test-suite-kotlin` (KSP) and `test-suite-groovy` (Spock) hold the guide samples. Every sample is a `snippet::` with the same fully qualified name, under `io.micronaut.camel.docs`, in each suite.
+- The test suites' `application.yml` configures an H2 data source with `transaction-manager: springJdbc` (micronaut-data-spring-jdbc) for the transaction samples. Examples needing PostgreSQL or Kafka start them with Testcontainers and are skipped without a container runtime.
 - `.agents/skills/` is shared agent guidance synced from the template.
 
 ## Scope
@@ -42,6 +45,7 @@ Micronaut Camel integrates Apache Camel 4 with Micronaut 5. It was created from 
 ## Verification
 
 - `./gradlew check` runs the tests. The messaging tests start brokers with Testcontainers (in `TestPropertyProvider` tests); with Podman, Ryuk may fail to mount the socket, so run them with `TESTCONTAINERS_RYUK_DISABLED=true`. The tests stop their containers themselves.
+- `./gradlew check` runs the tests. With Podman, run it with `TESTCONTAINERS_RYUK_DISABLED=true`, as Ryuk cannot mount the Podman socket.
 - Run `./gradlew publishGuide` after guide or `toc.yml` changes.
 
 ## Contributing Guidelines

@@ -44,4 +44,6 @@ micronautBuild {
     importMicronautCatalog("micronaut-kafka")
     importMicronautCatalog("micronaut-nats")
     importMicronautCatalog("micronaut-rabbitmq")
+    importMicronautCatalog("micronaut-data")
+    importMicronautCatalog("micronaut-sql")
 }

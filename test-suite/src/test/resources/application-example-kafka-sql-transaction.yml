@@ -1,0 +1,11 @@
+# Ports kafka-sql-transaction/src/main/resources/application.yaml
+camel:
+  component:
+    kafka:
+      # the test sets the brokers of a Kafka container
+      retries: 2
+
+# the test sets the url, username and password of a PostgreSQL container
+datasources:
+  default:
+    driver-class-name: org.postgresql.Driver
