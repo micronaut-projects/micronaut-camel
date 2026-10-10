@@ -1,0 +1,10 @@
+# Ports vault/src/main/resources/camel/cars-datasource.yaml
+# The PostgreSQL driver's DataSource replaces Spring's DriverManagerDataSource. The placeholders read the
+# secret from the HashiCorp Vault of the Micronaut Vault client configuration (vault.client.*).
+- beans:
+    - name: datasource
+      type: org.postgresql.ds.PGSimpleDataSource
+      properties:
+        url: '{{hashicorp:secret:database#myJdbcURL}}'
+        user: '{{hashicorp:secret:database#myUsername}}'
+        password: '{{hashicorp:secret:database#myPassword}}'

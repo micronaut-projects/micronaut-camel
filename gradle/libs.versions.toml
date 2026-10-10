@@ -32,6 +32,14 @@ micronaut-nats = "5.1.0"
 micronaut-rabbitmq = "5.1.0"
 micronaut-data = "5.2.2"
 micronaut-sql = "7.2.0"
+micronaut-security = "5.4.0"
+micronaut-redis = "7.2.0"
+micronaut-validation = "5.2.1"
+micronaut-object-storage = "3.1.0"
+micronaut-mcp = "2.1.0"
+micronaut-langchain4j = "2.3.0"
+micronaut-aws = "5.1.1"
+micronaut-azure = "6.2.0"
 groovy = "4.0.24"
 spock = "2.3-groovy-4.0"
 
@@ -53,6 +61,14 @@ micronaut-kafka = { module = "io.micronaut.kafka:micronaut-kafka-bom", version.r
 micronaut-nats = { module = "io.micronaut.nats:micronaut-nats-bom", version.ref = "micronaut-nats" }
 micronaut-rabbitmq = { module = "io.micronaut.rabbitmq:micronaut-rabbitmq-bom", version.ref = "micronaut-rabbitmq" }
 micronaut-data = { module = "io.micronaut.data:micronaut-data-bom", version.ref = "micronaut-data" }
+micronaut-security = { module = "io.micronaut.security:micronaut-security-bom", version.ref = "micronaut-security" }
+micronaut-redis = { module = "io.micronaut.redis:micronaut-redis-bom", version.ref = "micronaut-redis" }
+micronaut-validation = { module = "io.micronaut.validation:micronaut-validation-bom", version.ref = "micronaut-validation" }
+micronaut-object-storage = { module = "io.micronaut.objectstorage:micronaut-object-storage-bom", version.ref = "micronaut-object-storage" }
+micronaut-mcp = { module = "io.micronaut.mcp:micronaut-mcp-bom", version.ref = "micronaut-mcp" }
+micronaut-langchain4j = { module = "io.micronaut.langchain4j:micronaut-langchain4j-bom", version.ref = "micronaut-langchain4j" }
+micronaut-aws = { module = "io.micronaut.aws:micronaut-aws-bom", version.ref = "micronaut-aws" }
+micronaut-azure = { module = "io.micronaut.azure:micronaut-azure-bom", version.ref = "micronaut-azure" }
 micronaut-sql = { module = "io.micronaut.sql:micronaut-sql-bom", version.ref = "micronaut-sql" }
 
 #
@@ -71,6 +87,18 @@ boms-camel = { module = "org.apache.camel:camel-bom", version.ref = "managed-cam
 camel-main = { module = "org.apache.camel:camel-main" }
 camel-amqp = { module = "org.apache.camel:camel-amqp" }
 camel-avro = { module = "org.apache.camel:camel-avro" }
+camel-ai-tool = { module = "org.apache.camel:camel-ai-tool" }
+camel-aws2-s3 = { module = "org.apache.camel:camel-aws2-s3" }
+camel-azure-storage-blob = { module = "org.apache.camel:camel-azure-storage-blob" }
+camel-bean-validator = { module = "org.apache.camel:camel-bean-validator" }
+camel-hashicorp-vault = { module = "org.apache.camel:camel-hashicorp-vault" }
+camel-jdbc = { module = "org.apache.camel:camel-jdbc" }
+camel-jsonpath = { module = "org.apache.camel:camel-jsonpath" }
+camel-langchain4j-chat = { module = "org.apache.camel:camel-langchain4j-chat" }
+camel-langchain4j-embeddings = { module = "org.apache.camel:camel-langchain4j-embeddings" }
+camel-mcp-server-api = { module = "org.apache.camel:camel-mcp-server-api" }
+camel-qdrant = { module = "org.apache.camel:camel-qdrant" }
+camel-spring-redis = { module = "org.apache.camel:camel-spring-redis" }
 camel-bean = { module = "org.apache.camel:camel-bean" }
 camel-catalog = { module = "org.apache.camel:camel-catalog" }
 camel-csv = { module = "org.apache.camel:camel-csv" }
@@ -84,8 +112,6 @@ camel-jackson = { module = "org.apache.camel:camel-jackson" }
 camel-health = { module = "org.apache.camel:camel-health" }
 camel-jackson3 = { module = "org.apache.camel:camel-jackson3" }
 camel-jms = { module = "org.apache.camel:camel-jms" }
-camel-jsonpath = { module = "org.apache.camel:camel-jsonpath" }
-camel-jdbc = { module = "org.apache.camel:camel-jdbc" }
 camel-jpa = { module = "org.apache.camel:camel-jpa" }
 camel-kafka = { module = "org.apache.camel:camel-kafka" }
 camel-log = { module = "org.apache.camel:camel-log" }
@@ -110,6 +136,12 @@ camel-timer = { module = "org.apache.camel:camel-timer" }
 camel-undertow = { module = "org.apache.camel:camel-undertow" }
 camel-yaml-dsl = { module = "org.apache.camel:camel-yaml-dsl" }
 
+# Testcontainers for the tests that need a service
+testcontainers-core = { module = "org.testcontainers:testcontainers" }
+testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
+testcontainers-qdrant = { module = "org.testcontainers:testcontainers-qdrant" }
+testcontainers-vault = { module = "org.testcontainers:testcontainers-vault" }
+
 # Versions from the OpenTelemetry BOM imported by micronaut-tracing
 opentelemetry-sdk-testing = { module = "io.opentelemetry:opentelemetry-sdk-testing" }
 # Versions from mnTest.boms.testcontainers
@@ -119,7 +151,6 @@ testcontainers-kafka = { module = "org.testcontainers:testcontainers-kafka" }
 testcontainers-rabbitmq = { module = "org.testcontainers:testcontainers-rabbitmq" }
 # Versions from the Testcontainers BOM of Micronaut Test
 testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter" }
-testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
 
 [bundles]
 

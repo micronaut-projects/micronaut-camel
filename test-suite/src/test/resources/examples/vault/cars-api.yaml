@@ -1,0 +1,14 @@
+# Ports vault/src/main/resources/camel/cars-api.yaml
+# The guide samples of this test suite bind REST services to JSON, so these services turn binding off.
+- rest:
+    path: api
+    bindingMode: "off"
+    get:
+      - path: cars
+        to: direct:get
+        produces: application/json
+    post:
+      - path: cars
+        to: direct:create
+        consumes: application/json
+        produces: text/plain

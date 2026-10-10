@@ -1,0 +1,17 @@
+# Ports vault/src/main/resources/application.properties
+camel:
+  main:
+    name: camel-micronaut-vault-example
+    routes-include-pattern: classpath:examples/vault/*.yaml
+  component:
+    sql:
+      # the YAML routes add a second DataSource, so the guide's camel-sql samples name the
+      # Micronaut data source instead of autowiring the only one
+      data-source: "#default"
+
+# Camel's HashiCorp Vault support uses the server of the Micronaut Vault client configuration,
+# instead of camel.vault.hashicorp.token, host, port and scheme
+vault:
+  client:
+    uri: http://localhost:8200
+    token: myroot

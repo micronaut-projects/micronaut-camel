@@ -40,3 +40,140 @@ snippet::io.micronaut.camel.docs.integrations.IntegrationRoutes[tags="routes", i
 Micronaut's distributed configuration loads secrets into the environment at startup, from AWS Secrets Manager and Parameter Store, Google Cloud Secret Manager, Azure Key Vault, Oracle Cloud Vault, HashiCorp Vault and Kubernetes. Camel's `{{...}}` placeholders resolve against the environment, so routes can use these secrets without Camel's own vault support.
 
 When the Micronaut Vault client is configured, with `vault.client.uri` and `vault.client.token`, Camel's HashiCorp Vault support uses the same server, so `{{hashicorp:...}}` placeholders and the `hashicorp-vault` component work without `camel.vault.hashicorp.*` options. Options set under `camel.vault.hashicorp` take precedence.
+
+=== Security
+
+The routes of the `platform-http` component and of the REST DSL are served behind the Micronaut server filters, so https://micronaut-projects.github.io/micronaut-security/latest/guide/[Micronaut Security] protects them as it protects controllers, for example with an intercept URL map:
+
+[configuration]
+----
+micronaut:
+  security:
+    intercept-url-map:
+      - pattern: /admin/**
+        access:
+          - isAuthenticated()
+----
+
+A request to `/admin/stats` without credentials receives a `401 Unauthorized` response before it reaches Camel. Within routes, `MicronautSecurityAuthorizationPolicy` authorizes exchanges with the roles of the Micronaut `Authentication`, as `SpringSecurityAuthorizationPolicy` of camel-spring-security does with Spring Security. Declare a policy as a named bean:
+
+snippet::io.micronaut.camel.docs.integrations.SecurityPolicies[tags="policies", indent=0, title="An authorization policy", languages="java"]
+
+<1> Routes refer to the policy by its name.
+<2> The policy requires the `ROLE_ADMIN` role. With several roles, it requires one of them, or all of them with `setAllRolesRequired(true)`. Without roles, it only requires an authenticated user.
+
+snippet::io.micronaut.camel.docs.integrations.AdminRoutes[tags="routes", indent=0, title="A route that requires a role", languages="java"]
+
+<1> The intercept URL map requires an authenticated user for the REST service.
+<2> An exchange that the policy rejects fails with a `CamelAuthorizationException`, here turned into a `403 Forbidden` response.
+<3> The steps after `policy` only run for the users with the role.
+
+The policy finds the authentication in the `CamelAuthentication` header (an `Authentication`, or a `javax.security.auth.Subject` with an `Authentication` principal), then in the HTTP request that a `platform-http` consumer is serving, then in the HTTP request of the current thread, as `SecurityService` does.
+
+=== Redis
+
+Camel's `spring-redis` component needs a Spring Data Redis `RedisTemplate`. When the application has https://micronaut-projects.github.io/micronaut-redis/latest/guide/[Micronaut Redis] (`micronaut-redis-lettuce`), `camel-spring-redis` and its `redis.uri` configuration, Micronaut Camel creates a `redisConnectionFactory` bean, a Lettuce connection factory to the same server that shares the client resources of the Micronaut Redis client, and a `redisTemplate` bean, which Camel autowires into the component:
+
+[configuration]
+----
+redis:
+  uri: redis://localhost:6379
+----
+
+snippet::io.micronaut.camel.docs.integrations.GreetingCacheRoutes[tags="routes", indent=0, title="Routes using Redis", languages="java"]
+
+<1> The `SET` command stores the `CamelRedis.Value` header under the `CamelRedis.Key` header. The host and port of the URI are required by its syntax, but the template decides the server.
+<2> The `GET` command sets the body to the value.
+
+Like the template that the component creates without Spring Boot, the template serializes keys and values with Java serialization, and only deserializes the classes that Camel's default deserialization filter, or the `jdk.serialFilter` of the JVM, accepts. A `RedisTemplate` or `RedisConnectionFactory` bean of the application replaces those of Micronaut Camel. The consumers of `spring-redis` (`SUBSCRIBE` and `PSUBSCRIBE`) use the `connectionFactory` endpoint option, which Camel does not autowire: set `connectionFactory=#redisConnectionFactory`. Only the default, standalone, Redis server of `redis.uri` is supported.
+
+=== Bean Validation
+
+Camel's `bean-validator` component validates the message body with a `jakarta.validation.ValidatorFactory`, which Camel autowires from the application. https://micronaut-projects.github.io/micronaut-validation/latest/guide/[Micronaut Validation] provides one, which validates at compile time introspected beans without reflection, so the component works without Hibernate Validator, which can be excluded from the `camel-bean-validator` dependency:
+
+snippet::io.micronaut.camel.docs.integrations.Ticket[tags="ticket", indent=0, title="A validated type", languages="java"]
+
+<1> Micronaut Validation validates introspected types, annotated with `@Introspected` or `@Serdeable`.
+
+snippet::io.micronaut.camel.docs.integrations.TicketRoutes[tags="routes", indent=0, title="Validating the body", languages="java"]
+
+<1> An invalid ticket fails the exchange with a `BeanValidationException`, which lists the constraint violations.
+
+=== Object storage
+
+The `object-storage` component stores and reads objects with https://micronaut-projects.github.io/micronaut-object-storage/latest/guide/[Micronaut Object Storage], so the same route works with AWS S3, Azure Blob Storage, Google Cloud Storage, Oracle Cloud Object Storage or the local file system. It is part of `micronaut-camel-core`, and is active when the application has a Micronaut Object Storage module:
+
+dependency:io.micronaut.objectstorage:micronaut-object-storage-local[]
+
+[configuration]
+----
+micronaut:
+  object-storage:
+    local:
+      documents:
+        path: /var/documents
+----
+
+snippet::io.micronaut.camel.docs.integrations.DocumentRoutes[tags="routes", indent=0, title="Storing and reading objects"]
+
+<1> The URI names the object storage configuration: `documents`. The bucket, or container, is part of that configuration. `object-storage:default` uses the only object storage of the application.
+<2> The `get` operation reads the object into the body, as a byte array, or `null` when there is no such object.
+
+The `operation` option, or the `CamelObjectStorageOperation` header, is one of `upload` (or `put`, the default), `retrieve` (or `get`), `delete`, `exists` (the body is a `Boolean`), `list` (the body is the `Set` of the keys) and `copy` (to the key of the `CamelObjectStorageDestinationKey` header). The key of the object is the `CamelObjectStorageKey` header, the `key` option, or the `CamelFileName` header, so files consumed with the `file` component keep their names. An upload stores the `CamelObjectStorageContentType` header, or the `Content-Type` header, as the content type of the object, and the `CamelObjectStorageMetadata` header as its metadata, and sets the `CamelObjectStorageETag` header. The constants are in `ObjectStorageConstants`.
+
+=== HTTP client
+
+The `micronaut-http` component sends the message as an HTTP request with the Micronaut HTTP client. Requests to a service ID use Micronaut's service discovery and load balancing, the configuration of the service (`micronaut.http.services.<id>.*`), the client filters and tracing. It is part of `micronaut-camel-core`, and is active when the application has the Micronaut HTTP client:
+
+[configuration]
+----
+micronaut:
+  http:
+    services:
+      inventory:
+        url: http://localhost:8081
+----
+
+snippet::io.micronaut.camel.docs.integrations.InventoryRoutes[tags="routes", indent=0, title="Calling a service", languages="java"]
+
+<1> The URI is the service ID and a path, `inventory/stock`, to which the `CamelHttpPath` header is appended. A URL, such as `micronaut-http:https://example.com/stock`, also works. The parameters that are not options of the endpoint are the query of the request, unless the `CamelHttpQuery` header sets one.
+
+The method is the `CamelHttpMethod` header, the `httpMethod` option, or `POST` when the message has a body and `GET` otherwise. The body is sent as bytes, with the `Content-Type` header, and the other headers, except the `Camel*` headers, are request headers. The response sets the body to a byte array, the `CamelHttpResponseCode` and `Content-Type` headers, and a header per response header. A response with an error status fails the exchange with a `MicronautHttpOperationFailedException`, unless `throwExceptionOnFailure=false`.
+
+=== MCP server
+
+Camel exposes the `ai-tool` routes as the tools of a https://modelcontextprotocol.io[Model Context Protocol] server. When the application has the MCP server of https://micronaut-projects.github.io/micronaut-mcp/latest/guide/[Micronaut MCP] and `camel-mcp-server-api`, the tools are published by the Micronaut MCP server, next to the tools of the application, instead of the Vert.x server of `camel-mcp-server`:
+
+dependency:io.micronaut.mcp:micronaut-mcp-server-java-sdk[]
+
+dependency:org.apache.camel:camel-mcp-server-api[]
+
+As with Camel Main, `camel.server.mcp-enabled` enables the server and `camel.server.mcp-tags` selects the tags of the tools to expose; `camel.server.mcp-tool-timeout` limits the time of a call. The `micronaut.mcp.server.*` configuration configures the server, including its transport and endpoint:
+
+[configuration]
+----
+micronaut:
+  mcp:
+    server:
+      transport: HTTP
+camel:
+  server:
+    mcp-enabled: true
+    mcp-tags: weather
+----
+
+snippet::io.micronaut.camel.docs.integrations.WeatherTools[tags="routes", indent=0, title="A tool", languages="java"]
+
+<1> The tool is exposed because its tag, `weather`, is selected. Its parameters describe its input schema.
+<2> The arguments of a call are message headers, and the body is the result of the call.
+
+The tools of stopped routes are removed from the server. The synchronous and reactive servers of the HTTP and STDIO transports are supported.
+
+=== Cloud and AI clients
+
+Camel autowires the clients that Micronaut modules create into its components, so they are configured once, with Micronaut configuration:
+
+* the `S3Client` of https://micronaut-projects.github.io/micronaut-aws/latest/guide/[Micronaut AWS] (`micronaut-aws-sdk-v2`, configured with `aws.*`) is the client of the `aws2-s3` component
+* the `BlobServiceClient` that Micronaut Object Storage for Azure creates from `micronaut.object-storage.azure.<name>.*`, with the credentials of Micronaut Azure (`azure.credential.*`), is the client of the `azure-storage-blob` component
+* the `ChatModel` and `EmbeddingModel` beans of https://micronaut-projects.github.io/micronaut-langchain4j/latest/guide/[Micronaut LangChain4j] are the models of the `langchain4j-chat`, `langchain4j-embeddings` and `langchain4j-embeddingstore` components
+* the `DataSource` beans of Micronaut SQL are the data sources of the `jdbc` and `sql` components
