@@ -45,6 +45,14 @@ boms-camel = { module = "org.apache.camel:camel-bom", version.ref = "managed-cam
 
 # Versions from boms-camel
 camel-main = { module = "org.apache.camel:camel-main" }
+camel-bean = { module = "org.apache.camel:camel-bean" }
+camel-direct = { module = "org.apache.camel:camel-direct" }
+camel-endpointdsl = { module = "org.apache.camel:camel-endpointdsl" }
+camel-log = { module = "org.apache.camel:camel-log" }
+camel-mock = { module = "org.apache.camel:camel-mock" }
+camel-seda = { module = "org.apache.camel:camel-seda" }
+camel-timer = { module = "org.apache.camel:camel-timer" }
+camel-yaml-dsl = { module = "org.apache.camel:camel-yaml-dsl" }
 
 [bundles]
 

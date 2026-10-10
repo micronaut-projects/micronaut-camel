@@ -1,0 +1,8 @@
+- route:
+    from:
+      uri: direct:yaml
+      steps:
+        - setBody:
+            expression:
+              simple:
+                expression: "Hello from YAML, ${body}"
