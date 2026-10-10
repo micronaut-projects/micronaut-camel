@@ -20,7 +20,12 @@ import org.apache.camel.component.seda.SedaComponent;
 import org.apache.camel.spi.TypeConverterLoader;
 import org.apache.camel.spi.TypeConverterRegistry;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -45,6 +50,37 @@ class IndexedCamelContextTest {
             assertInstanceOf(SedaComponent.class, camelContext.getComponent("seda"));
             assertTrue(RecordingLoader.loaded);
             assertEquals(42, camelContext.getTypeConverter().convertTo(Integer.class, "42"));
+        }
+    }
+
+    @Test
+    void mergesTheTypeConverterListsOfTheClasspathWithTheIndex(@TempDir Path dir) throws Exception {
+        // a list file the index missed, such as one of a jar that Micronaut AOT did not see
+        Path list = dir.resolve(CamelServiceIndex.ROOT + "TypeConverterLoader");
+        Files.createDirectories(list.getParent());
+        Files.writeString(list, ClasspathLoader.class.getName() + "\n");
+        CamelServiceIndex index = new CamelServiceIndex(Map.of(), Map.of("TypeConverterLoader", List.of(RecordingLoader.class.getName())));
+        Thread thread = Thread.currentThread();
+        ClassLoader classLoader = thread.getContextClassLoader();
+        try (URLClassLoader loader = new URLClassLoader(new URL[] {dir.toUri().toURL()}, IndexedCamelContextTest.class.getClassLoader())) {
+            thread.setContextClassLoader(loader);
+            try (IndexedCamelContext camelContext = new IndexedCamelContext(index)) {
+                camelContext.start();
+
+                assertTrue(RecordingLoader.loaded);
+                assertTrue(ClasspathLoader.loaded);
+            }
+        } finally {
+            thread.setContextClassLoader(classLoader);
+        }
+    }
+
+    public static class ClasspathLoader implements TypeConverterLoader {
+        static volatile boolean loaded;
+
+        @Override
+        public void load(TypeConverterRegistry registry) throws TypeConverterLoaderException {
+            loaded = true;
         }
     }
 

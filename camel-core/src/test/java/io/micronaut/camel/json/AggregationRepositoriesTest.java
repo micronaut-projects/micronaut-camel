@@ -32,6 +32,7 @@ import org.apache.camel.AggregationStrategy;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
+import org.apache.camel.builder.AggregationStrategies;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.leveldb.LevelDBAggregationRepository;
 import org.apache.camel.component.mock.MockEndpoint;
@@ -94,6 +95,39 @@ class AggregationRepositoriesTest {
 
         aggregated.assertIsSatisfied();
         assertEquals(List.of(new Order("book", 1), new Order("pen", 2)), aggregated.getReceivedExchanges().get(0).getMessage().getBody());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"jdbc", "cache", "leveldb"})
+    void aggregatesGroupedBodies(String repository) throws Exception {
+        MockEndpoint aggregated = camelContext.getEndpoint("mock:grouped-body-" + repository, MockEndpoint.class);
+        aggregated.expectedMessageCount(1);
+
+        producerTemplate.sendBodyAndHeader("direct:grouped-body-" + repository, new Order("book", 1), "basket", "b");
+        producerTemplate.sendBodyAndHeader("direct:grouped-body-" + repository, new Order("pen", 2), "basket", "b");
+        producerTemplate.sendBodyAndHeader("direct:grouped-body-" + repository, new Order("cup", 3), "basket", "b");
+
+        aggregated.assertIsSatisfied();
+        assertEquals(List.of(new Order("book", 1), new Order("pen", 2), new Order("cup", 3)),
+            aggregated.getReceivedExchanges().get(0).getMessage().getBody());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"jdbc", "cache", "leveldb"})
+    void aggregatesGroupedExchanges(String repository) throws Exception {
+        MockEndpoint aggregated = camelContext.getEndpoint("mock:grouped-exchange-" + repository, MockEndpoint.class);
+        aggregated.expectedMessageCount(1);
+
+        producerTemplate.sendBodyAndHeader("direct:grouped-exchange-" + repository, new Order("book", 1), "basket", "c");
+        producerTemplate.sendBodyAndHeader("direct:grouped-exchange-" + repository, new Order("pen", 2), "basket", "c");
+        producerTemplate.sendBodyAndHeader("direct:grouped-exchange-" + repository, new Order("cup", 3), "basket", "c");
+
+        aggregated.assertIsSatisfied();
+        List<?> exchanges = aggregated.getReceivedExchanges().get(0).getMessage().getBody(List.class);
+        assertEquals(List.of(new Order("book", 1), new Order("pen", 2), new Order("cup", 3)),
+            exchanges.stream().map(exchange -> ((Exchange) exchange).getMessage().getBody()).toList());
+        assertEquals(List.of("c", "c", "c"),
+            exchanges.stream().map(exchange -> ((Exchange) exchange).getMessage().getHeader("basket")).toList());
     }
 
     @ParameterizedTest
@@ -199,6 +233,16 @@ class AggregationRepositoriesTest {
                 .aggregationRepository(repository)
                 .completionSize(2)
                 .to("mock:" + name);
+            from("direct:grouped-body-" + name)
+                .aggregate(header("basket"), AggregationStrategies.groupedBody())
+                .aggregationRepository(repository)
+                .completionSize(3)
+                .to("mock:grouped-body-" + name);
+            from("direct:grouped-exchange-" + name)
+                .aggregate(header("basket"), AggregationStrategies.groupedExchange())
+                .aggregationRepository(repository)
+                .completionSize(3)
+                .to("mock:grouped-exchange-" + name);
         }
     }
 

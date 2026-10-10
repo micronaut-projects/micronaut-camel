@@ -152,7 +152,7 @@ public final class CamelConfigVisitor implements TypeElementVisitor<Object, Obje
      */
     private static void writeValuesSchema(ClassElement element, VisitorContext context, String className, String prefix,
                                           Map<String, ? extends BaseOptionModel> options) {
-        String schema = ValuesSchemaGenerator.schema(className, prefix, options);
+        String schema = ValuesSchemaGenerator.schema(className, prefix, options, type -> isEnum(context, type));
         if (schema == null) {
             return;
         }
@@ -163,6 +163,18 @@ public final class CamelConfigVisitor implements TypeElementVisitor<Object, Obje
                 throw new ProcessingException(element, "Failed to write the schema of the values of " + className + ": " + e.getMessage(), e);
             }
         });
+    }
+
+    /**
+     * @param context The visitor context
+     * @param type    The name of the Java type of a Camel option
+     * @return Whether it is an enum, which Camel converts from text ignoring case: types of the compile classpath
+     * are checked, and the others are assumed to be enums unless they are of {@code java.lang}
+     */
+    private static boolean isEnum(VisitorContext context, String type) {
+        return context.getClassElement(type)
+            .map(ClassElement::isEnum)
+            .orElseGet(() -> type.indexOf('.') > 0 && !type.startsWith("java.lang."));
     }
 
     private static boolean fromArtifacts(ArtifactModel<?> model, Set<String> artifacts) {

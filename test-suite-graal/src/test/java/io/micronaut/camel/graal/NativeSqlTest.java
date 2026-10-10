@@ -28,6 +28,7 @@ import org.apache.camel.AggregationStrategy;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
+import org.apache.camel.builder.AggregationStrategies;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.processor.aggregate.jdbc.JdbcAggregationRepository;
@@ -88,6 +89,27 @@ class NativeSqlTest {
 
         aggregated.assertIsSatisfied();
         assertEquals(List.of(new Order("book", 1), new Order("pen", 2)), aggregated.getReceivedExchanges().get(0).getMessage().getBody());
+    }
+
+    @Test
+    void aggregationRepositoriesKeepTheGroupedBodiesAndExchanges() throws Exception {
+        MockEndpoint bodies = camelContext.getEndpoint("mock:grouped-body", MockEndpoint.class);
+        bodies.expectedMessageCount(1);
+        MockEndpoint exchanges = camelContext.getEndpoint("mock:grouped-exchange", MockEndpoint.class);
+        exchanges.expectedMessageCount(1);
+
+        for (String route : List.of("direct:grouped-body", "direct:grouped-exchange")) {
+            producerTemplate.sendBody(route, new Order("book", 1));
+            producerTemplate.sendBody(route, new Order("pen", 2));
+            producerTemplate.sendBody(route, new Order("cup", 3));
+        }
+
+        bodies.assertIsSatisfied();
+        exchanges.assertIsSatisfied();
+        List<Order> orders = List.of(new Order("book", 1), new Order("pen", 2), new Order("cup", 3));
+        assertEquals(orders, bodies.getReceivedExchanges().get(0).getMessage().getBody());
+        List<?> grouped = exchanges.getReceivedExchanges().get(0).getMessage().getBody(List.class);
+        assertEquals(orders, grouped.stream().map(exchange -> ((Exchange) exchange).getMessage().getBody()).toList());
     }
 
     @Serdeable
@@ -167,6 +189,18 @@ class NativeSqlTest {
                 .aggregationRepository(json)
                 .completionSize(2)
                 .to("mock:json");
+
+            from("direct:grouped-body")
+                .aggregate(constant("bodies"), AggregationStrategies.groupedBody())
+                .aggregationRepository(json)
+                .completionSize(3)
+                .to("mock:grouped-body");
+
+            from("direct:grouped-exchange")
+                .aggregate(constant("exchanges"), AggregationStrategies.groupedExchange())
+                .aggregationRepository(json)
+                .completionSize(3)
+                .to("mock:grouped-exchange");
         }
     }
 

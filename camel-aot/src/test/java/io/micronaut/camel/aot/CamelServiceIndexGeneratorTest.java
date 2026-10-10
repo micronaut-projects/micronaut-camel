@@ -37,6 +37,7 @@ import javax.tools.ToolProvider;
 import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -46,8 +47,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -88,6 +92,29 @@ class CamelServiceIndexGeneratorTest {
             IndexedCamelContext indexed = assertInstanceOf(IndexedCamelContext.class, camelContext);
             assertSame(index, indexed.getIndex());
             assertInstanceOf(TimerComponent.class, camelContext.getComponent("timer"));
+        }
+    }
+
+    @Test
+    void indexesTheListsOfJarsWithoutDirectoryEntries(@TempDir Path dir) throws Exception {
+        // a jar of file entries only, as some build tools and shading plugins write them:
+        // ClassLoader.getResources finds no META-INF/services/org/apache/camel directory in it
+        Path jar = dir.resolve("no-directories.jar");
+        try (JarOutputStream out = new JarOutputStream(Files.newOutputStream(jar))) {
+            out.putNextEntry(new JarEntry(CamelServiceIndex.ROOT + "TypeConverterLoader"));
+            out.write("# loaders\ncom.example.FirstLoader\ncom.example.SecondLoader\n".getBytes(StandardCharsets.UTF_8));
+            out.closeEntry();
+            out.putNextEntry(new JarEntry(CamelServiceIndex.ROOT + "FallbackTypeConverter"));
+            out.write("com.example.Fallback\n".getBytes(StandardCharsets.UTF_8));
+            out.closeEntry();
+        }
+        try (URLClassLoader loader = new URLClassLoader(new URL[] {jar.toUri().toURL()}, null)) {
+            assertFalse(loader.getResources(CamelServiceIndex.ROOT.substring(0, CamelServiceIndex.ROOT.length() - 1)).hasMoreElements());
+
+            CamelServiceIndexGenerator.Index index = CamelServiceIndexGenerator.scan(loader);
+
+            assertEquals(List.of("com.example.FirstLoader", "com.example.SecondLoader"), index.lists.get("TypeConverterLoader"));
+            assertEquals(List.of("com.example.Fallback"), index.lists.get("FallbackTypeConverter"));
         }
     }
 

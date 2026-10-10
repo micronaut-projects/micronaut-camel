@@ -26,11 +26,14 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 
 /**
- * Camel's type converter, which finds the type converter loaders in a {@link CamelServiceIndex}.
+ * Camel's type converter, which finds the type converter loaders in a {@link CamelServiceIndex}, and in the
+ * list files of the classpath: the index has the lists of the jars of the application when it was built, and
+ * reading the three list files of the classpath as well is cheap, so a jar the index missed cannot leave its
+ * type converters out.
  *
  * @author Graeme Rocher
  * @since 1.0.0
@@ -48,22 +51,24 @@ final class IndexedTypeConverter extends DefaultTypeConverter {
 
     @Override
     protected void findTypeConverterLoaderClasses(Collection<String> loaders, String basePath) throws IOException {
-        Optional<List<String>> indexed = indexed(basePath);
-        if (indexed.isPresent()) {
-            loaders.addAll(indexed.get());
-        } else {
-            super.findTypeConverterLoaderClasses(loaders, basePath);
+        Set<String> found = new LinkedHashSet<>(indexed(basePath));
+        super.findTypeConverterLoaderClasses(found, basePath);
+        for (String loader : found) {
+            if (!loaders.contains(loader)) {
+                loaders.add(loader);
+            }
         }
     }
 
     @Override
     protected Collection<String> findFallbackTypeConverterClasses() throws IOException {
-        Optional<List<String>> indexed = indexed(META_INF_SERVICES_FALLBACK_TYPE_CONVERTER);
-        return indexed.<Collection<String>>map(LinkedHashSet::new).orElse(super.findFallbackTypeConverterClasses());
+        Set<String> found = new LinkedHashSet<>(indexed(META_INF_SERVICES_FALLBACK_TYPE_CONVERTER));
+        found.addAll(super.findFallbackTypeConverterClasses());
+        return found;
     }
 
-    private Optional<List<String>> indexed(String path) {
+    private List<String> indexed(String path) {
         CamelServiceIndex serviceIndex = index.get();
-        return serviceIndex != null ? serviceIndex.list(path) : Optional.empty();
+        return serviceIndex != null ? serviceIndex.list(path).orElse(List.of()) : List.of();
     }
 }

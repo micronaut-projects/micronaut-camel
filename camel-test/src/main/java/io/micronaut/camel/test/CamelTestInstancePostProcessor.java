@@ -56,7 +56,8 @@ final class CamelTestInstancePostProcessor implements TestExecutionListener {
     @Override
     public void beforeTestExecution(TestContext testContext) throws Exception {
         if (testContext.getTestMethod() instanceof Method method) {
-            // names the route coverage file of @EnableRouteCoverage: Spock feature methods have generated names
+            // names the route coverage file of @EnableRouteCoverage: Spock feature methods have generated names, so
+            // their feature names are used, which RouteCoverageDumper turns into safe file names
             String name = method.getName().contains("$") && testContext.getTestName() != null ? testContext.getTestName() : method.getName();
             beanContext.findBean(CamelTestAnnotations.class).ifPresent(annotations -> annotations.testMethodStarted(name));
         }

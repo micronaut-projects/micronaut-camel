@@ -59,6 +59,8 @@ import java.util.stream.Stream;
  * that Camel resolves by name, and the lists of type converter loaders. The generated code loads the index
  * as a {@link CamelServiceIndex} static optimization, which Micronaut Camel uses instead of looking up the
  * service files on the classpath, and falls back to the classpath for the files that are not in the index.
+ * The lists of type converter loaders are also read by name, as the jars without directory entries have no
+ * {@code META-INF/services/org/apache/camel} directory for the class loader to find.
  *
  * <p>Enable it with the {@code camel.service.index.enabled} option of Micronaut AOT.</p>
  *
@@ -83,7 +85,7 @@ public final class CamelServiceIndexGenerator implements AOTCodeGenerator {
     static final String LOADER = "CamelServiceIndexLoader";
 
     private static final String ROOT = CamelServiceIndex.ROOT;
-    private static final Set<String> LIST_FILES = Set.of("TypeConverterLoader", "UberTypeConverterLoader", "FallbackTypeConverter");
+    private static final List<String> LIST_FILES = List.of("TypeConverterLoader", "UberTypeConverterLoader", "FallbackTypeConverter");
     // the entries per generated method, which keeps the methods under the size limit of the JVM
     private static final int CHUNK_SIZE = 250;
 
@@ -132,6 +134,18 @@ public final class CamelServiceIndexGenerator implements AOTCodeGenerator {
                                 index.read(directory.relativize(file).toString().replace('\\', '/'), in);
                             }
                         }
+                    }
+                }
+            }
+            // ClassLoader.getResources finds no directory in the jars that have no directory entries, so the lists,
+            // which Camel reads from every jar, are also read by name: the index must have them all
+            for (String list : LIST_FILES) {
+                Enumeration<URL> files = classLoader.getResources(ROOT + list);
+                while (files.hasMoreElements()) {
+                    URLConnection connection = files.nextElement().openConnection();
+                    connection.setUseCaches(false);
+                    try (InputStream in = connection.getInputStream()) {
+                        index.read(list, in);
                     }
                 }
             }
