@@ -34,6 +34,34 @@ camel:
 
 Routes then use `kafka:orders` for the first cluster and `audit:events` for the second. camel-main normalizes the names of these beans, so use letters and digits only.
 
+=== Unknown options
+
+Camel Main applies the `+camel.component.*+`, `+camel.dataformat.*+` and `+camel.language.*+` options when the `CamelContext` is created, and by default it fails the startup of the application when an option cannot be applied, for example an option that the version of the component on the classpath does not have, as when the configuration was written for a newer Camel version than the application's:
+
+[configuration]
+----
+camel:
+  component:
+    seda:
+      queue-size: 500
+      option-of-a-newer-camel: true
+----
+
+The application fails to start with an error that names the option. To start it anyway, turn off Camel's fail fast:
+
+[configuration]
+----
+camel:
+  main:
+    auto-configuration-fail-fast: false
+----
+
+Camel then applies the options it knows and ignores the others, without a warning: the options that Camel applied are listed in the auto-configuration summary that it logs at startup, so an ignored option is the one missing from the summary. Micronaut Camel keeps Camel's default, as an option that is silently ignored is harder to diagnose than a failed startup.
+
+The options of a component that is not on the classpath fail the startup in both cases, as Camel cannot create the component to configure it.
+
+NOTE: The options documented by the <<modules, Camel modules>> are those of the Camel version of Micronaut Camel, which is the version of the Camel BOM it imports. An application that upgrades or downgrades Camel itself may find options of the reference that its components do not have.
+
 === IDE support and the configuration reference
 
 The `micronaut-camel-configuration` module documents the `camel.main.*` options and Camel's other configuration groups as `@ConfigurationProperties`, so IDEs complete them and they appear in the configuration reference:
