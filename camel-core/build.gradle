@@ -9,8 +9,19 @@ dependencies {
     api(platform(libs.boms.camel))
     api(libs.camel.main)
 
+    compileOnly(libs.camel.endpointdsl)
+
     testAnnotationProcessor(mn.micronaut.inject.java)
     testImplementation(mnTest.micronaut.test.junit5)
+    testImplementation(libs.camel.bean)
+    testImplementation(libs.camel.direct)
+    testImplementation(libs.camel.endpointdsl)
+    testImplementation(libs.camel.log)
+    testImplementation(libs.camel.mock)
+    testImplementation(libs.camel.seda)
+    testImplementation(libs.camel.timer)
+    testImplementation(libs.camel.yaml.dsl)
     testRuntimeOnly(mnTest.junit.jupiter.engine)
     testRuntimeOnly(mnTest.junit.platform.launcher)
+    testRuntimeOnly(mnLogging.logback.classic)
 }
