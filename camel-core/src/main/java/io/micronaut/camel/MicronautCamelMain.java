@@ -17,6 +17,7 @@ package io.micronaut.camel;
 
 import io.micronaut.core.annotation.Internal;
 import org.apache.camel.CamelContext;
+import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.main.SimpleMain;
 
 /**
@@ -45,7 +46,8 @@ final class MicronautCamelMain extends SimpleMain {
     }
 
     /**
-     * Collects the routes from the registry and the route resources, then starts Camel.
+     * Collects the routes from the registry and the route resources, then starts Camel, unless a test
+     * asked for the context to be left stopped with {@link DefaultCamelContext#setNoStart(boolean)}.
      *
      * @throws Exception if the routes cannot be added or Camel fails to start
      */
@@ -55,7 +57,12 @@ final class MicronautCamelMain extends SimpleMain {
             routesEnabled = true;
             configureRoutes(camelContext);
         }
-        start();
+        if (DefaultCamelContext.isNoStart()) {
+            // a test asked to start the context itself, once it has advised the routes
+            DefaultCamelContext.setNoStart(false);
+        } else {
+            start();
+        }
     }
 
     /**

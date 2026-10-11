@@ -19,6 +19,7 @@ rootProject.name = 'camel-parent'
 
 include 'camel-bom'
 include 'camel-core'
+include 'camel-test'
 
 enableFeaturePreview 'TYPESAFE_PROJECT_ACCESSORS'
 
